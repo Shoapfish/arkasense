@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParkaSense — Entrance Display</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Barlow:wght@400;600;700&display=swap');
+
+  :root {
+    --green:  #00FF87;
+    --red:    #FF3B3B;
+    --yellow: #FFD600;
+    --bg:     #0A0E1A;
+    --panel:  #0F1628;
+    --border: #1E2D4A;
+    --text:   #E8F0FF;
+    --dim:    #4A6080;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,135,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,135,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding: 24px 32px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .logo-icon {
+    width: 44px; height: 44px;
+    border: 2px solid var(--green);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 0 14px rgba(0,255,135,0.3);
+  }
+
+  .logo-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 3px;
+    color: var(--text);
+  }
+
+  .logo-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 2px;
+    margin-top: 2px;
+  }
+
+  .header-right {
+    text-align: right;
+  }
+
+  .live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(0,255,135,0.08);
+    border: 1px solid rgba(0,255,135,0.25);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--green);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+
+  .live-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  .clock {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: var(--dim);
+    letter-spacing: 1px;
+  }
+
+  /* ── BIG STATUS BANNER ── */
+  .status-banner {
+    text-align: center;
+    padding: 28px 20px;
+    border-radius: 16px;
+    border: 2px solid var(--border);
+    background: var(--panel);
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.5s ease;
+  }
+
+  .status-banner.available {
+    border-color: var(--green);
+    box-shadow: 0 0 40px rgba(0,255,135,0.12), inset 0 0 40px rgba(0,255,135,0.04);
+  }
+
+  .status-banner.full {
+    border-color: var(--red);
+    box-shadow: 0 0 40px rgba(255,59,59,0.15), inset 0 0 40px rgba(255,59,59,0.05);
+    animation: shake 0.5s ease;
+  }
+
+  .status-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 10px;
+  }
+
+  .status-count {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(72px, 12vw, 120px);
+    line-height: 1;
+    letter-spacing: 4px;
+    transition: color 0.4s ease;
+  }
+
+  .status-count.available { color: var(--green); text-shadow: 0 0 40px rgba(0,255,135,0.5); }
+  .status-count.full      { color: var(--red);   text-shadow: 0 0 40px rgba(255,59,59,0.5); }
+
+  .status-text {
+    font-family: 'Barlow', sans-serif;
+    font-weight: 700;
+    font-size: clamp(18px, 3vw, 28px);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 6px;
+    transition: color 0.4s ease;
+  }
+
+  .status-text.available { color: rgba(0,255,135,0.8); }
+  .status-text.full      { color: rgba(255,59,59,0.8); }
+
+  .proceed-hint {
+    margin-top: 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    color: var(--dim);
+    letter-spacing: 1px;
+    min-height: 22px;
+    transition: all 0.3s ease;
+  }
+
+  .proceed-hint.lit { color: var(--green); }
+
+  /* ── SLOT GRID ── */
+  .slots-section {
+    flex: 1;
+  }
+
+  .slots-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .slots-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .slot-card {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 16px;
+    text-align: center;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slot-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    border-radius: 12px;
+  }
+
+  .slot-card.free {
+    border-color: var(--green);
+    box-shadow: 0 0 20px rgba(0,255,135,0.15);
+    transform: translateY(-2px);
+  }
+
+  .slot-card.free::after {
+    background: radial-gradient(circle at center, rgba(0,255,135,0.06) 0%, transparent 70%);
+    opacity: 1;
+  }
+
+  .slot-card.occupied {
+    border-color: rgba(255,59,59,0.4);
+    opacity: 0.65;
+    transform: translateY(0);
+  }
+
+  .slot-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px;
+    letter-spacing: 3px;
+    line-height: 1;
+    margin-bottom: 10px;
+    transition: color 0.4s ease;
+  }
+
+  .slot-card.free     .slot-name { color: var(--green); text-shadow: 0 0 20px rgba(0,255,135,0.4); }
+  .slot-card.occupied .slot-name { color: var(--dim); }
+
+  .slot-status-badge {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 600;
+    transition: all 0.4s ease;
+  }
+
+  .slot-card.free     .slot-status-badge { background: rgba(0,255,135,0.15); color: var(--green); border: 1px solid rgba(0,255,135,0.3); }
+  .slot-card.occupied .slot-status-badge { background: rgba(255,59,59,0.1);  color: var(--red);   border: 1px solid rgba(255,59,59,0.2); }
+
+  .slot-arrow {
+    margin-top: 10px;
+    font-size: 22px;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: all 0.4s ease;
+  }
+
+  .slot-card.free .slot-arrow {
+    opacity: 1;
+    transform: translateY(0);
+    animation: bounceDown 1.2s ease-in-out infinite;
+  }
+
+  /* ── FOOTER LOG ── */
+  .footer {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .latest-event {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--dim);
+    letter-spacing: 1px;
+  }
+
+  .latest-event span { color: var(--text); }
+
+  .school-tag {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 3px;
+    color: var(--dim);
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  @keyframes bounceDown {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(5px); }
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%       { transform: translateX(-8px); }
+    40%       { transform: translateX(8px); }
+    60%       { transform: translateX(-5px); }
+    80%       { transform: translateX(5px); }
+  }
+
+  @keyframes flashIn {
+    0%   { opacity: 0; transform: scale(0.95); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  .flash { animation: flashIn 0.3s ease forwards; }
+
+  /* Connection lost overlay */
+  .conn-lost {
+    display: none;
+    position: fixed;
+    top: 16px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255,59,59,0.15);
+    border: 1px solid var(--red);
+    border-radius: 8px;
+    padding: 8px 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--red);
+    letter-spacing: 2px;
+    z-index: 100;
+  }
+</style>
+</head>
+<body>
+
+<div class="conn-lost" id="connLost">⚠ CONNECTION LOST — RECONNECTING...</div>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">🅿</div>
+      <div>
+        <div class="logo-text">ParkaSense</div>
+        <div class="logo-sub">EXACT COLLEGES OF ASIA · SMART PARKING</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="live-badge"><div class="live-dot"></div> LIVE SYSTEM</div>
+      <div class="clock" id="clock">--:--:--</div>
+    </div>
+  </div>
+
+  <!-- BIG STATUS BANNER -->
+  <div class="status-banner available" id="statusBanner">
+    <div class="status-label">Available Parking Slots</div>
+    <div class="status-count available" id="statusCount">3</div>
+    <div class="status-text available" id="statusText">SLOTS AVAILABLE</div>
+    <div class="proceed-hint lit" id="proceedHint">PROCEED TO AVAILABLE SLOT ↓</div>
+  </div>
+
+  <!-- SLOT CARDS -->
+  <div class="slots-section">
+    <div class="slots-label">// Slot Status — Real Time</div>
+    <div class="slots-grid" id="slotsGrid">
+      <div class="slot-card free" id="card-S1">
+        <div class="slot-name">S1</div>
+        <div class="slot-status-badge">AVAILABLE</div>
+        <div class="slot-arrow">↓</div>
+      </div>
+      <div class="slot-card free" id="card-S2">
+        <div class="slot-name">S2</div>
+        <div class="slot-status-badge">AVAILABLE</div>
+        <div class="slot-arrow">↓</div>
+      </div>
+      <div class="slot-card free" id="card-S3">
+        <div class="slot-name">S3</div>
+        <div class="slot-status-badge">AVAILABLE</div>
+        <div class="slot-arrow">↓</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="latest-event" id="latestEvent">// Waiting for first detection...</div>
+    <div class="school-tag">ECA · PARKING SYSTEM v1.0</div>
+  </div>
+
+</div>
+
+<script>
+  // ── CLOCK ──
+  function updateClock() {
+    const now = new Date()
+    document.getElementById('clock').textContent =
+      now.toLocaleTimeString('en-PH', { hour12: false })
+  }
+  updateClock()
+  setInterval(updateClock, 1000)
+
+  // ── SOCKET.IO — connect to backend ──
+  const socket = io('http://localhost:3000')
+
+  socket.on('connect', () => {
+    document.getElementById('connLost').style.display = 'none'
+  })
+
+  socket.on('disconnect', () => {
+    document.getElementById('connLost').style.display = 'block'
+  })
+
+  // ── MAIN UPDATE HANDLER ──
+  socket.on('slot-update', (data) => {
+    const { slots, available, total, log } = data
+
+    // Update each slot card
+    Object.entries(slots).forEach(([name, status]) => {
+      const card  = document.getElementById(`card-${name}`)
+      const badge = card.querySelector('.slot-status-badge')
+      const arrow = card.querySelector('.slot-arrow')
+
+      const wasFree = card.classList.contains('free')
+      const isFree  = status === 'free'
+
+      if (wasFree !== isFree) {
+        card.classList.add('flash')
+        setTimeout(() => card.classList.remove('flash'), 300)
+      }
+
+      card.className = `slot-card ${isFree ? 'free' : 'occupied'}`
+      badge.textContent = isFree ? 'AVAILABLE' : 'OCCUPIED'
+    })
+
+    // Update big status banner
+    const banner     = document.getElementById('statusBanner')
+    const countEl    = document.getElementById('statusCount')
+    const textEl     = document.getElementById('statusText')
+    const hintEl     = document.getElementById('proceedHint')
+
+    countEl.textContent = available
+    countEl.className   = `status-count ${available > 0 ? 'available' : 'full'}`
+
+    if (available === 0) {
+      banner.className  = 'status-banner full'
+      textEl.className  = 'status-text full'
+      textEl.textContent = 'PARKING FULL'
+      hintEl.textContent = 'PLEASE FIND ANOTHER PARKING AREA'
+      hintEl.className  = 'proceed-hint'
+    } else {
+      banner.className  = 'status-banner available'
+      textEl.className  = 'status-text available'
+      textEl.textContent = available === 1 ? 'SLOT AVAILABLE' : 'SLOTS AVAILABLE'
+      // find first free slot
+      const firstFree = Object.entries(slots).find(([,s]) => s === 'free')?.[0]
+      hintEl.textContent = `PROCEED TO SLOT ${firstFree} ↓`
+      hintEl.className  = 'proceed-hint lit'
+    }
+
+    // Update latest event log
+    if (log && log.length > 0) {
+      const e = log[0]
+      const action = e.status === 'occupied' ? 'VEHICLE ENTERED' : 'VEHICLE LEFT'
+      document.getElementById('latestEvent').innerHTML =
+        `// <span>${e.timestamp}</span> — ${e.slot}: ${action}`
+    }
+  })
+</script>
+</body>
+</html>

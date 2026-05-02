@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParkaSense — Admin Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Barlow:wght@400;500;600;700&display=swap');
+
+  :root {
+    --green:  #00FF87;
+    --red:    #FF3B3B;
+    --amber:  #FFD600;
+    --blue:   #4A90FF;
+    --bg:     #0A0E1A;
+    --panel:  #0F1628;
+    --panel2: #131B30;
+    --border: #1E2D4A;
+    --text:   #E8F0FF;
+    --dim:    #4A6080;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    grid-template-columns: 1fr;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(74,144,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(74,144,255,0.025) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,14,26,0.9);
+    backdrop-filter: blur(10px);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brand-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 3px;
+  }
+
+  .brand-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 2px;
+    background: var(--panel2);
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .conn-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+
+  .conn-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 1.4s infinite;
+  }
+
+  .conn-dot.off { background: var(--red); animation: none; }
+
+  .topbar-clock {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: var(--dim);
+  }
+
+  /* ── MAIN GRID ── */
+  .main {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    grid-template-rows: auto 1fr;
+    gap: 16px;
+    padding: 16px 24px 20px;
+    height: calc(100vh - 57px);
+    overflow: hidden;
+  }
+
+  /* ── STAT CARDS ── */
+  .stats-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .stat-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .stat-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .stat-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: 2px;
+    line-height: 1;
+  }
+
+  .stat-value.green { color: var(--green); }
+  .stat-value.red   { color: var(--red); }
+  .stat-value.blue  { color: var(--blue); }
+  .stat-value.amber { color: var(--amber); }
+  .stat-icon { font-size: 28px; opacity: 0.5; }
+
+  /* ── PARKING MAP ── */
+  .map-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-title::before {
+    content: '//';
+    color: var(--blue);
+    opacity: 0.6;
+  }
+
+  .parking-map {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .map-road {
+    background: var(--panel2);
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 2px;
+  }
+
+  .map-slots {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .map-slot {
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 12px;
+    text-align: center;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: default;
+    position: relative;
+  }
+
+  .map-slot.free {
+    border-color: var(--green);
+    background: rgba(0,255,135,0.05);
+    box-shadow: 0 0 16px rgba(0,255,135,0.1);
+    transform: translateY(-2px);
+  }
+
+  .map-slot.occupied {
+    border-color: rgba(255,59,59,0.35);
+    background: rgba(255,59,59,0.04);
+  }
+
+  .map-slot-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    letter-spacing: 2px;
+    transition: color 0.3s;
+  }
+
+  .map-slot.free     .map-slot-name { color: var(--green); }
+  .map-slot.occupied .map-slot-name { color: var(--dim); }
+
+  .map-slot-icon { font-size: 20px; margin: 4px 0; }
+
+  .map-slot-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: color 0.3s;
+  }
+
+  .map-slot.free     .map-slot-label { color: rgba(0,255,135,0.7); }
+  .map-slot.occupied .map-slot-label { color: rgba(255,59,59,0.5); }
+
+  .map-entrance {
+    background: rgba(74,144,255,0.06);
+    border: 1px solid rgba(74,144,255,0.2);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--blue);
+    letter-spacing: 2px;
+  }
+
+  /* ── EVENT LOG ── */
+  .log-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .log-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-right: 4px;
+  }
+
+  .log-list::-webkit-scrollbar { width: 3px; }
+  .log-list::-webkit-scrollbar-track { background: transparent; }
+  .log-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .log-item {
+    background: var(--panel2);
+    border-radius: 6px;
+    padding: 8px 10px;
+    border-left: 2px solid var(--border);
+    animation: slideIn 0.3s ease;
+  }
+
+  .log-item.enter { border-left-color: var(--red); }
+  .log-item.exit  { border-left-color: var(--green); }
+
+  .log-time {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+  }
+
+  .log-msg {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .log-slot {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    margin-top: 2px;
+  }
+
+  .log-item.enter .log-slot { color: var(--red); }
+  .log-item.exit  .log-slot { color: var(--green); }
+
+  .log-empty {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--dim);
+    text-align: center;
+    padding: 30px 0;
+    letter-spacing: 1px;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(10px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes flashIn {
+    0%   { opacity: 0; transform: scale(0.96); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  .flash { animation: flashIn 0.25s ease; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="brand">
+    <div style="font-size:20px;">🅿</div>
+    <div class="brand-name">ParkaSense</div>
+    <div class="brand-tag">ADMIN DASHBOARD</div>
+  </div>
+  <div class="topbar-right">
+    <div class="conn-status">
+      <div class="conn-dot" id="connDot"></div>
+      <span id="connText" style="color:var(--green)">CONNECTED</span>
+    </div>
+    <div class="topbar-clock" id="clock">--:--:--</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- STAT CARDS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div>
+        <div class="stat-label">Available</div>
+        <div class="stat-value green" id="statAvailable">3</div>
+      </div>
+      <div class="stat-icon">🟢</div>
+    </div>
+    <div class="stat-card">
+      <div>
+        <div class="stat-label">Occupied</div>
+        <div class="stat-value red" id="statOccupied">0</div>
+      </div>
+      <div class="stat-icon">🔴</div>
+    </div>
+    <div class="stat-card">
+      <div>
+        <div class="stat-label">Total Slots</div>
+        <div class="stat-value blue" id="statTotal">3</div>
+      </div>
+      <div class="stat-icon">🅿</div>
+    </div>
+    <div class="stat-card">
+      <div>
+        <div class="stat-label">Events Today</div>
+        <div class="stat-value amber" id="statEvents">0</div>
+      </div>
+      <div class="stat-icon">📋</div>
+    </div>
+  </div>
+
+  <!-- PARKING MAP -->
+  <div class="map-panel">
+    <div class="panel-title">Parking Lot Map — Live View</div>
+    <div class="parking-map">
+      <div class="map-road">← ROAD / DRIVING LANE →</div>
+      <div class="map-slots">
+        <div class="map-slot free" id="map-S1">
+          <div class="map-slot-name">S1</div>
+          <div class="map-slot-icon">🟢</div>
+          <div class="map-slot-label">Available</div>
+        </div>
+        <div class="map-slot free" id="map-S2">
+          <div class="map-slot-name">S2</div>
+          <div class="map-slot-icon">🟢</div>
+          <div class="map-slot-label">Available</div>
+        </div>
+        <div class="map-slot free" id="map-S3">
+          <div class="map-slot-name">S3</div>
+          <div class="map-slot-icon">🟢</div>
+          <div class="map-slot-label">Available</div>
+        </div>
+      </div>
+      <div class="map-entrance">▲ ENTRANCE / EXIT ▲</div>
+    </div>
+  </div>
+
+  <!-- EVENT LOG -->
+  <div class="log-panel">
+    <div class="panel-title">Event Log</div>
+    <div class="log-list" id="logList">
+      <div class="log-empty">// Waiting for vehicle activity...</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── CLOCK ──
+  function updateClock() {
+    document.getElementById('clock').textContent =
+      new Date().toLocaleTimeString('en-PH', { hour12: false })
+  }
+  updateClock()
+  setInterval(updateClock, 1000)
+
+  let totalEvents = 0
+
+  // ── SOCKET ──
+  const socket = io('http://localhost:3000')
+
+  socket.on('connect', () => {
+    document.getElementById('connDot').className = 'conn-dot'
+    document.getElementById('connText').style.color = 'var(--green)'
+    document.getElementById('connText').textContent = 'CONNECTED'
+  })
+
+  socket.on('disconnect', () => {
+    document.getElementById('connDot').className = 'conn-dot off'
+    document.getElementById('connText').style.color = 'var(--red)'
+    document.getElementById('connText').textContent = 'DISCONNECTED'
+  })
+
+  socket.on('slot-update', (data) => {
+    const { slots, available, total, changes, log } = data
+
+    // Update stat cards
+    const occupied = total - available
+    document.getElementById('statAvailable').textContent = available
+    document.getElementById('statOccupied').textContent  = occupied
+    document.getElementById('statTotal').textContent     = total
+
+    // Update map slots
+    Object.entries(slots).forEach(([name, status]) => {
+      const el    = document.getElementById(`map-${name}`)
+      const icon  = el.querySelector('.map-slot-icon')
+      const label = el.querySelector('.map-slot-label')
+      const isFree = status === 'free'
+
+      if (el.className !== `map-slot ${isFree ? 'free' : 'occupied'}`) {
+        el.classList.add('flash')
+        setTimeout(() => el.classList.remove('flash'), 250)
+      }
+
+      el.className   = `map-slot ${isFree ? 'free' : 'occupied'}`
+      icon.textContent  = isFree ? '🟢' : '🔴'
+      label.textContent = isFree ? 'Available' : 'Occupied'
+    })
+
+    // Rebuild event log
+    if (log && log.length > 0) {
+      totalEvents = log.length
+      document.getElementById('statEvents').textContent = totalEvents
+
+      const logEl = document.getElementById('logList')
+      logEl.innerHTML = ''
+
+      log.slice(0, 30).forEach(e => {
+        const isEnter = e.status === 'occupied'
+        const div = document.createElement('div')
+        div.className = `log-item ${isEnter ? 'enter' : 'exit'}`
+        div.innerHTML = `
+          <div class="log-time">${e.timestamp}</div>
+          <div class="log-msg">${isEnter ? '🚗 Vehicle Entered' : '✅ Vehicle Left'}</div>
+          <div class="log-slot">Slot ${e.slot} → ${e.status.toUpperCase()}</div>
+        `
+        logEl.appendChild(div)
+      })
+    }
+  })
+</script>
+</body>
+</html>
