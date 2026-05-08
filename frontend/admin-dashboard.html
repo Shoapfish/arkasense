@@ -5,99 +5,101 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ParkaSense — Admin Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Barlow:wght@400;500;600;700&display=swap');
-
   :root {
-    --green:  #00FF87;
-    --red:    #FF3B3B;
-    --amber:  #FFD600;
-    --blue:   #4A90FF;
-    --bg:     #0A0E1A;
-    --panel:  #0F1628;
-    --panel2: #131B30;
-    --border: #1E2D4A;
-    --text:   #E8F0FF;
-    --dim:    #4A6080;
+    --bg:       #0C1120;
+    --surface:  #131929;
+    --card:     #1A2235;
+    --border:   #252F45;
+    --text:     #E8EDF5;
+    --muted:    #5A6B8A;
+    --dim:      #3A4A65;
+    --blue:     #3B82F6;
+    --blue-dim: rgba(59,130,246,0.12);
+    --green:    #22C55E;
+    --green-dim:rgba(34,197,94,0.12);
+    --red:      #EF4444;
+    --red-dim:  rgba(239,68,68,0.12);
+    --amber:    #F59E0B;
+    --amber-dim:rgba(245,158,11,0.12);
+    --radius:   12px;
   }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin:0; padding:0; box-sizing:border-box; }
 
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: 'Barlow', sans-serif;
-    min-height: 100vh;
+    font-family: 'DM Sans', sans-serif;
+    height: 100vh;
     display: grid;
-    grid-template-rows: auto 1fr;
-    grid-template-columns: 1fr;
-  }
-
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(74,144,255,0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(74,144,255,0.025) 1px, transparent 1px);
-    background-size: 32px 32px;
-    pointer-events: none;
-    z-index: 0;
+    grid-template-rows: 52px 1fr;
+    overflow: hidden;
   }
 
   /* ── TOPBAR ── */
   .topbar {
-    position: relative;
-    z-index: 1;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 24px;
-    border-bottom: 1px solid var(--border);
-    background: rgba(10,14,26,0.9);
-    backdrop-filter: blur(10px);
   }
 
   .brand {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+  }
+
+  .brand-mark {
+    width: 30px; height: 30px;
+    background: var(--blue);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 14px;
+    color: white;
   }
 
   .brand-name {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 22px;
-    letter-spacing: 3px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    color: var(--text);
   }
 
   .brand-tag {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 10px;
-    color: var(--dim);
+    font-size: 9px;
+    font-weight: 600;
     letter-spacing: 2px;
-    background: var(--panel2);
-    padding: 3px 8px;
-    border-radius: 4px;
-    border: 1px solid var(--border);
+    text-transform: uppercase;
+    background: var(--blue-dim);
+    color: var(--blue);
+    padding: 2px 8px;
+    border-radius: 20px;
   }
 
   .topbar-right {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 16px;
   }
 
-  .conn-status {
+  .conn-pill {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-family: 'Share Tech Mono', monospace;
+    gap: 5px;
     font-size: 11px;
-    letter-spacing: 1px;
+    font-weight: 600;
+    color: var(--muted);
   }
 
   .conn-dot {
-    width: 8px; height: 8px;
+    width: 7px; height: 7px;
     border-radius: 50%;
     background: var(--green);
     animation: pulse 1.4s infinite;
@@ -105,91 +107,121 @@
 
   .conn-dot.off { background: var(--red); animation: none; }
 
-  .topbar-clock {
-    font-family: 'Share Tech Mono', monospace;
+  .clock {
     font-size: 13px;
-    color: var(--dim);
+    font-weight: 500;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
   }
 
-  /* ── MAIN GRID ── */
+  /* ── MAIN LAYOUT ── */
   .main {
-    position: relative;
-    z-index: 1;
     display: grid;
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: 1fr 300px;
     grid-template-rows: auto 1fr;
-    gap: 16px;
-    padding: 16px 24px 20px;
-    height: calc(100vh - 57px);
+    gap: 12px;
+    padding: 12px 16px 14px;
     overflow: hidden;
   }
 
-  /* ── STAT CARDS ── */
+  /* ── STAT ROW ── */
   .stats-row {
     grid-column: 1 / -1;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
   }
 
   .stat-card {
-    background: var(--panel);
+    background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 18px;
+    border-radius: var(--radius);
+    padding: 14px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
   }
 
   .stat-label {
-    font-family: 'Share Tech Mono', monospace;
     font-size: 10px;
-    color: var(--dim);
-    letter-spacing: 2px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
-    margin-bottom: 6px;
+    color: var(--muted);
+    margin-bottom: 5px;
   }
 
   .stat-value {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 36px;
-    letter-spacing: 2px;
+    font-family: 'Syne', sans-serif;
+    font-size: 30px;
+    font-weight: 800;
     line-height: 1;
   }
 
-  .stat-value.green { color: var(--green); }
-  .stat-value.red   { color: var(--red); }
-  .stat-value.blue  { color: var(--blue); }
-  .stat-value.amber { color: var(--amber); }
-  .stat-icon { font-size: 28px; opacity: 0.5; }
+  .stat-value.blue   { color: var(--blue); }
+  .stat-value.green  { color: var(--green); }
+  .stat-value.red    { color: var(--red); }
+  .stat-value.amber  { color: var(--amber); }
+  .stat-value.muted  { color: var(--dim); }
 
-  /* ── PARKING MAP ── */
+  .stat-icon {
+    width: 38px; height: 38px;
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .stat-icon.blue   { background: var(--blue-dim); }
+  .stat-icon.green  { background: var(--green-dim); }
+  .stat-icon.red    { background: var(--red-dim); }
+  .stat-icon.amber  { background: var(--amber-dim); }
+
+  /* ── LEFT PANEL ── */
+  .left-panel {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    gap: 12px;
+    overflow: hidden;
+  }
+
+  /* ── MAP PANEL ── */
   .map-panel {
-    background: var(--panel);
+    background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: var(--radius);
     padding: 18px;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
   }
 
   .panel-title {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 3px;
-    color: var(--dim);
-    text-transform: uppercase;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
   }
 
-  .panel-title::before {
-    content: '//';
-    color: var(--blue);
-    opacity: 0.6;
+  .panel-sub {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .live-dot-sm {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 1.4s infinite;
+    margin-right: 5px;
   }
 
   .parking-map {
@@ -197,93 +229,236 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 12px;
+    gap: 8px;
   }
 
-  .map-road {
-    background: var(--panel2);
-    border: 1px dashed var(--border);
-    border-radius: 8px;
-    padding: 12px;
-    text-align: center;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 10px;
-    color: var(--dim);
-    letter-spacing: 2px;
-  }
-
-  .map-slots {
+  .map-row {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
+    gap: 8px;
+  }
+
+  .road-strip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 12px;
+    background: rgba(245,158,11,0.05);
+    border: 1px dashed rgba(245,158,11,0.2);
+    border-radius: 8px;
+  }
+
+  .road-dash {
+    flex: 1;
+    height: 2px;
+    background: repeating-linear-gradient(90deg, var(--amber) 0, var(--amber) 10px, transparent 10px, transparent 18px);
+  }
+
+  .road-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--amber);
+    white-space: nowrap;
+    text-transform: uppercase;
   }
 
   .map-slot {
-    border: 2px solid var(--border);
     border-radius: 10px;
-    padding: 16px 12px;
+    padding: 12px 8px;
     text-align: center;
-    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    transition: all 0.3s ease;
     cursor: default;
-    position: relative;
   }
 
   .map-slot.free {
-    border-color: var(--green);
-    background: rgba(0,255,135,0.05);
-    box-shadow: 0 0 16px rgba(0,255,135,0.1);
-    transform: translateY(-2px);
+    border-color: rgba(34,197,94,0.3);
+    background: var(--green-dim);
   }
 
   .map-slot.occupied {
-    border-color: rgba(255,59,59,0.35);
-    background: rgba(255,59,59,0.04);
+    border-color: rgba(239,68,68,0.3);
+    background: var(--red-dim);
+    opacity: 0.8;
+  }
+
+  .map-slot.reserved {
+    border-color: rgba(245,158,11,0.4);
+    background: var(--amber-dim);
   }
 
   .map-slot-name {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 32px;
-    letter-spacing: 2px;
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    margin-bottom: 3px;
     transition: color 0.3s;
   }
 
   .map-slot.free     .map-slot-name { color: var(--green); }
-  .map-slot.occupied .map-slot-name { color: var(--dim); }
+  .map-slot.occupied .map-slot-name { color: var(--red); }
+  .map-slot.reserved .map-slot-name { color: var(--amber); }
 
-  .map-slot-icon { font-size: 20px; margin: 4px 0; }
+  .map-slot-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin: 0 auto 3px;
+    transition: background 0.3s;
+  }
+
+  .map-slot.free     .map-slot-dot { background: var(--green); }
+  .map-slot.occupied .map-slot-dot { background: var(--red); }
+  .map-slot.reserved .map-slot-dot { background: var(--amber); }
 
   .map-slot-label {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 10px;
+    font-size: 8px;
+    font-weight: 700;
     letter-spacing: 1px;
     text-transform: uppercase;
     transition: color 0.3s;
   }
 
-  .map-slot.free     .map-slot-label { color: rgba(0,255,135,0.7); }
-  .map-slot.occupied .map-slot-label { color: rgba(255,59,59,0.5); }
+  .map-slot.free     .map-slot-label { color: var(--green); }
+  .map-slot.occupied .map-slot-label { color: var(--red); }
+  .map-slot.reserved .map-slot-label { color: var(--amber); }
 
-  .map-entrance {
-    background: rgba(74,144,255,0.06);
-    border: 1px solid rgba(74,144,255,0.2);
-    border-radius: 8px;
-    padding: 10px;
-    text-align: center;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 10px;
-    color: var(--blue);
-    letter-spacing: 2px;
+  .map-slot-res {
+    font-size: 8px;
+    color: var(--amber);
+    font-weight: 600;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  /* ── EVENT LOG ── */
-  .log-panel {
-    background: var(--panel);
+  /* ── RESERVATIONS PANEL ── */
+  .res-panel {
+    background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    max-height: 200px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .res-list {
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px;
+    padding-right: 2px;
+  }
+
+  .res-list::-webkit-scrollbar { width: 3px; }
+  .res-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .res-item {
+    background: var(--amber-dim);
+    border: 1px solid rgba(245,158,11,0.2);
+    border-radius: 9px;
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    animation: slideIn 0.2s ease;
+  }
+
+  .res-item-info { flex: 1; min-width: 0; }
+  .res-item-slot {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--amber);
+  }
+
+  .res-item-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .res-item-plate {
+    font-size: 10px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .res-item-expire {
+    font-size: 10px;
+    color: var(--amber);
+    font-weight: 500;
+    white-space: nowrap;
+    text-align: right;
+  }
+
+  .btn-cancel-res {
+    background: rgba(239,68,68,0.15);
+    border: 1px solid rgba(239,68,68,0.2);
+    color: var(--red);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-cancel-res:hover { background: rgba(239,68,68,0.25); }
+
+  .res-empty {
+    text-align: center;
+    padding: 12px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* ── LOG PANEL ── */
+  .log-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
     padding: 18px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+  }
+
+  .log-tabs {
+    display: flex;
+    gap: 4px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+
+  .log-tab {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.2s;
+  }
+
+  .log-tab.active {
+    background: var(--blue-dim);
+    border-color: rgba(59,130,246,0.2);
+    color: var(--blue);
   }
 
   .log-list {
@@ -291,74 +466,46 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding-right: 4px;
+    gap: 5px;
+    padding-right: 2px;
   }
 
   .log-list::-webkit-scrollbar { width: 3px; }
-  .log-list::-webkit-scrollbar-track { background: transparent; }
   .log-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
   .log-item {
-    background: var(--panel2);
-    border-radius: 6px;
-    padding: 8px 10px;
+    border-radius: 8px;
+    padding: 7px 10px;
     border-left: 2px solid var(--border);
-    animation: slideIn 0.3s ease;
+    background: var(--surface);
+    animation: slideIn 0.2s ease;
   }
 
-  .log-item.enter { border-left-color: var(--red); }
-  .log-item.exit  { border-left-color: var(--green); }
+  .log-item.enter  { border-left-color: var(--red);   background: var(--red-dim); }
+  .log-item.exit   { border-left-color: var(--blue);  background: var(--blue-dim); }
+  .log-item.resin  { border-left-color: var(--amber); background: var(--amber-dim); }
+  .log-item.resout { border-left-color: var(--green); background: var(--green-dim); }
 
-  .log-time {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 10px;
-    color: var(--dim);
-    letter-spacing: 1px;
-    margin-bottom: 2px;
-  }
-
-  .log-msg {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text);
-  }
-
-  .log-slot {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
-    margin-top: 2px;
-  }
-
-  .log-item.enter .log-slot { color: var(--red); }
-  .log-item.exit  .log-slot { color: var(--green); }
+  .log-time { font-size: 9px; color: var(--muted); font-weight: 500; margin-bottom: 1px; }
+  .log-msg  { font-size: 11px; font-weight: 700; }
+  .log-item.enter  .log-msg { color: var(--red); }
+  .log-item.exit   .log-msg { color: var(--blue); }
+  .log-item.resin  .log-msg { color: var(--amber); }
+  .log-item.resout .log-msg { color: var(--green); }
+  .log-slot { font-size: 10px; color: var(--muted); margin-top: 1px; }
 
   .log-empty {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
-    color: var(--dim);
     text-align: center;
-    padding: 30px 0;
-    letter-spacing: 1px;
+    padding: 20px;
+    font-size: 11px;
+    color: var(--muted);
   }
 
   /* ── ANIMATIONS ── */
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.3; }
-  }
-
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateX(10px); }
-    to   { opacity: 1; transform: translateX(0); }
-  }
-
-  @keyframes flashIn {
-    0%   { opacity: 0; transform: scale(0.96); }
-    100% { opacity: 1; transform: scale(1); }
-  }
-
-  .flash { animation: flashIn 0.25s ease; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
+  @keyframes slideIn { from{opacity:0;transform:translateX(6px);} to{opacity:1;transform:translateX(0);} }
+  @keyframes flash { 0%{opacity:0;transform:scale(0.97);} 100%{opacity:1;transform:scale(1);} }
+  .flash { animation: flash 0.2s ease; }
 </style>
 </head>
 <body>
@@ -366,163 +513,308 @@
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="brand">
-    <div style="font-size:20px;">🅿</div>
+    <div class="brand-mark">P</div>
     <div class="brand-name">ParkaSense</div>
-    <div class="brand-tag">ADMIN DASHBOARD</div>
+    <div class="brand-tag">Admin Dashboard</div>
   </div>
   <div class="topbar-right">
-    <div class="conn-status">
+    <div class="conn-pill">
       <div class="conn-dot" id="connDot"></div>
-      <span id="connText" style="color:var(--green)">CONNECTED</span>
+      <span id="connText">Connected</span>
     </div>
-    <div class="topbar-clock" id="clock">--:--:--</div>
+    <div class="clock" id="clock">--:--:--</div>
   </div>
 </div>
 
 <!-- MAIN -->
 <div class="main">
 
-  <!-- STAT CARDS -->
+  <!-- STATS -->
   <div class="stats-row">
     <div class="stat-card">
       <div>
         <div class="stat-label">Available</div>
-        <div class="stat-value green" id="statAvailable">3</div>
+        <div class="stat-value blue" id="statAvail">6</div>
       </div>
-      <div class="stat-icon">🟢</div>
+      <div class="stat-icon blue">🟦</div>
     </div>
     <div class="stat-card">
       <div>
         <div class="stat-label">Occupied</div>
         <div class="stat-value red" id="statOccupied">0</div>
       </div>
-      <div class="stat-icon">🔴</div>
+      <div class="stat-icon red">🔴</div>
+    </div>
+    <div class="stat-card">
+      <div>
+        <div class="stat-label">Reserved</div>
+        <div class="stat-value amber" id="statReserved">0</div>
+      </div>
+      <div class="stat-icon amber">🔶</div>
     </div>
     <div class="stat-card">
       <div>
         <div class="stat-label">Total Slots</div>
-        <div class="stat-value blue" id="statTotal">3</div>
+        <div class="stat-value muted" id="statTotal">6</div>
       </div>
-      <div class="stat-icon">🅿</div>
+      <div class="stat-icon blue">🅿</div>
     </div>
     <div class="stat-card">
       <div>
         <div class="stat-label">Events Today</div>
-        <div class="stat-value amber" id="statEvents">0</div>
+        <div class="stat-value green" id="statEvents">0</div>
       </div>
-      <div class="stat-icon">📋</div>
+      <div class="stat-icon green">📋</div>
     </div>
   </div>
 
-  <!-- PARKING MAP -->
-  <div class="map-panel">
-    <div class="panel-title">Parking Lot Map — Live View</div>
-    <div class="parking-map">
-      <div class="map-road">← ROAD / DRIVING LANE →</div>
-      <div class="map-slots">
-        <div class="map-slot free" id="map-S1">
-          <div class="map-slot-name">S1</div>
-          <div class="map-slot-icon">🟢</div>
-          <div class="map-slot-label">Available</div>
-        </div>
-        <div class="map-slot free" id="map-S2">
-          <div class="map-slot-name">S2</div>
-          <div class="map-slot-icon">🟢</div>
-          <div class="map-slot-label">Available</div>
-        </div>
-        <div class="map-slot free" id="map-S3">
-          <div class="map-slot-name">S3</div>
-          <div class="map-slot-icon">🟢</div>
-          <div class="map-slot-label">Available</div>
+  <!-- LEFT: MAP + RESERVATIONS -->
+  <div class="left-panel">
+
+    <!-- MAP -->
+    <div class="map-panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title"><span class="live-dot-sm"></span>Live Parking View</div>
+          <div class="panel-sub">6-slot layout · 3 top · 3 bottom</div>
         </div>
       </div>
-      <div class="map-entrance">▲ ENTRANCE / EXIT ▲</div>
+      <div class="parking-map">
+        <div class="map-row">
+          <div class="map-slot free" id="map-S1">
+            <div class="map-slot-dot"></div>
+            <div class="map-slot-name">S1</div>
+            <div class="map-slot-label">Free</div>
+            <div class="map-slot-res" id="mres-S1"></div>
+          </div>
+          <div class="map-slot free" id="map-S2">
+            <div class="map-slot-dot"></div>
+            <div class="map-slot-name">S2</div>
+            <div class="map-slot-label">Free</div>
+            <div class="map-slot-res" id="mres-S2"></div>
+          </div>
+          <div class="map-slot free" id="map-S3">
+            <div class="map-slot-dot"></div>
+            <div class="map-slot-name">S3</div>
+            <div class="map-slot-label">Free</div>
+            <div class="map-slot-res" id="mres-S3"></div>
+          </div>
+        </div>
+        <div class="road-strip">
+          <div class="road-dash"></div>
+          <div class="road-label">← Entrance / Exit →</div>
+          <div class="road-dash"></div>
+        </div>
+        <div class="map-row">
+          <div class="map-slot free" id="map-S4">
+            <div class="map-slot-dot"></div>
+            <div class="map-slot-name">S4</div>
+            <div class="map-slot-label">Free</div>
+            <div class="map-slot-res" id="mres-S4"></div>
+          </div>
+          <div class="map-slot free" id="map-S5">
+            <div class="map-slot-dot"></div>
+            <div class="map-slot-name">S5</div>
+            <div class="map-slot-label">Free</div>
+            <div class="map-slot-res" id="mres-S5"></div>
+          </div>
+          <div class="map-slot free" id="map-S6">
+            <div class="map-slot-dot"></div>
+            <div class="map-slot-name">S6</div>
+            <div class="map-slot-label">Free</div>
+            <div class="map-slot-res" id="mres-S6"></div>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <!-- ACTIVE RESERVATIONS -->
+    <div class="res-panel">
+      <div class="panel-header" style="margin-bottom:0">
+        <div>
+          <div class="panel-title">⏳ Active Reservations</div>
+          <div class="panel-sub">Admin can cancel any reservation</div>
+        </div>
+      </div>
+      <div class="res-list" id="resList">
+        <div class="res-empty">No active reservations</div>
+      </div>
+    </div>
+
   </div>
 
-  <!-- EVENT LOG -->
+  <!-- RIGHT: LOG -->
   <div class="log-panel">
-    <div class="panel-title">Event Log</div>
+    <div class="panel-header" style="margin-bottom:0">
+      <div>
+        <div class="panel-title">Activity Log</div>
+        <div class="panel-sub">Vehicle & reservation events</div>
+      </div>
+    </div>
+    <div class="log-tabs">
+      <button class="log-tab active" onclick="switchTab('all')">All</button>
+      <button class="log-tab" onclick="switchTab('vehicle')">Vehicle</button>
+      <button class="log-tab" onclick="switchTab('reservation')">Reservations</button>
+    </div>
     <div class="log-list" id="logList">
-      <div class="log-empty">// Waiting for vehicle activity...</div>
+      <div class="log-empty">Waiting for activity...</div>
     </div>
   </div>
 
 </div>
 
 <script>
-  // ── CLOCK ──
-  function updateClock() {
+  // Clock
+  setInterval(() => {
     document.getElementById('clock').textContent =
       new Date().toLocaleTimeString('en-PH', { hour12: false })
-  }
-  updateClock()
-  setInterval(updateClock, 1000)
+  }, 1000)
 
-  let totalEvents = 0
+  const BACKEND = 'http://localhost:3000'
+  const socket  = io(BACKEND)
 
-  // ── SOCKET ──
-  const socket = io('http://localhost:3000')
+  let allLog = []
+  let resLog = []
+  let currentTab = 'all'
 
   socket.on('connect', () => {
     document.getElementById('connDot').className = 'conn-dot'
-    document.getElementById('connText').style.color = 'var(--green)'
-    document.getElementById('connText').textContent = 'CONNECTED'
+    document.getElementById('connText').textContent = 'Connected'
   })
 
   socket.on('disconnect', () => {
     document.getElementById('connDot').className = 'conn-dot off'
-    document.getElementById('connText').style.color = 'var(--red)'
-    document.getElementById('connText').textContent = 'DISCONNECTED'
+    document.getElementById('connText').textContent = 'Disconnected'
   })
 
-  socket.on('slot-update', (data) => {
-    const { slots, available, total, changes, log } = data
+  socket.on('slot-update', ({ slots, reservations, available, total, log, reservationLog }) => {
+    const resCount  = Object.keys(reservations || {}).length
+    const occupied  = Object.values(slots).filter(s => s === 'occupied').length
 
-    // Update stat cards
-    const occupied = total - available
-    document.getElementById('statAvailable').textContent = available
-    document.getElementById('statOccupied').textContent  = occupied
-    document.getElementById('statTotal').textContent     = total
+    // Stats
+    document.getElementById('statAvail').textContent    = available
+    document.getElementById('statOccupied').textContent = occupied
+    document.getElementById('statReserved').textContent = resCount
+    document.getElementById('statTotal').textContent    = total
 
-    // Update map slots
+    // Map
     Object.entries(slots).forEach(([name, status]) => {
       const el    = document.getElementById(`map-${name}`)
-      const icon  = el.querySelector('.map-slot-icon')
       const label = el.querySelector('.map-slot-label')
-      const isFree = status === 'free'
+      const resEl = document.getElementById(`mres-${name}`)
+      const isRes = !!(reservations && reservations[name])
+      const isOcc = status === 'occupied'
+      const wasClass = el.className
 
-      if (el.className !== `map-slot ${isFree ? 'free' : 'occupied'}`) {
-        el.classList.add('flash')
-        setTimeout(() => el.classList.remove('flash'), 250)
+      if (isOcc) {
+        el.className = 'map-slot occupied'
+        label.textContent = 'Occupied'
+        resEl.textContent = ''
+      } else if (isRes) {
+        el.className = 'map-slot reserved'
+        label.textContent = 'Reserved'
+        resEl.textContent = '👤 ' + (reservations[name].name || '').split(' ')[0]
+      } else {
+        el.className = 'map-slot free'
+        label.textContent = 'Free'
+        resEl.textContent = ''
       }
 
-      el.className   = `map-slot ${isFree ? 'free' : 'occupied'}`
-      icon.textContent  = isFree ? '🟢' : '🔴'
-      label.textContent = isFree ? 'Available' : 'Occupied'
+      if (wasClass !== el.className) {
+        el.classList.add('flash')
+        setTimeout(() => el.classList.remove('flash'), 200)
+      }
     })
 
-    // Rebuild event log
-    if (log && log.length > 0) {
-      totalEvents = log.length
-      document.getElementById('statEvents').textContent = totalEvents
+    // Active reservations list
+    renderReservations(reservations || {})
 
-      const logEl = document.getElementById('logList')
-      logEl.innerHTML = ''
+    // Logs
+    allLog = [
+      ...(reservationLog || []).map(e => ({ ...e, type: 'reservation' })),
+      ...(log || []).map(e => ({ ...e, type: 'vehicle' }))
+    ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
 
-      log.slice(0, 30).forEach(e => {
-        const isEnter = e.status === 'occupied'
-        const div = document.createElement('div')
-        div.className = `log-item ${isEnter ? 'enter' : 'exit'}`
-        div.innerHTML = `
-          <div class="log-time">${e.timestamp}</div>
-          <div class="log-msg">${isEnter ? '🚗 Vehicle Entered' : '✅ Vehicle Left'}</div>
-          <div class="log-slot">Slot ${e.slot} → ${e.status.toUpperCase()}</div>
-        `
-        logEl.appendChild(div)
-      })
-    }
+    resLog = (reservationLog || []).map(e => ({ ...e, type: 'reservation' }))
+
+    document.getElementById('statEvents').textContent = (log || []).length + (reservationLog || []).length
+
+    renderLog()
   })
+
+  function renderReservations(res) {
+    const el = document.getElementById('resList')
+    const entries = Object.entries(res)
+    if (entries.length === 0) {
+      el.innerHTML = '<div class="res-empty">No active reservations</div>'
+      return
+    }
+    el.innerHTML = entries.map(([slot, r]) => `
+      <div class="res-item">
+        <div class="res-item-info">
+          <div class="res-item-slot">Slot ${slot}</div>
+          <div class="res-item-name">${r.name}</div>
+          <div class="res-item-plate">🚗 ${r.plate} ${r.phone ? '· 📞 '+r.phone : ''}</div>
+        </div>
+        <div>
+          <div class="res-item-expire">Expires<br>${r.expiresAtDisplay}</div>
+          <button class="btn-cancel-res" onclick="adminCancel('${slot}')">Cancel</button>
+        </div>
+      </div>
+    `).join('')
+  }
+
+  function switchTab(tab) {
+    currentTab = tab
+    document.querySelectorAll('.log-tab').forEach((b, i) => {
+      b.classList.toggle('active', ['all','vehicle','reservation'][i] === tab)
+    })
+    renderLog()
+  }
+
+  function renderLog() {
+    const el = document.getElementById('logList')
+    let data = currentTab === 'all' ? allLog
+      : currentTab === 'vehicle' ? allLog.filter(e => e.type === 'vehicle')
+      : allLog.filter(e => e.type === 'reservation')
+
+    if (data.length === 0) {
+      el.innerHTML = '<div class="log-empty">No activity yet</div>'
+      return
+    }
+
+    el.innerHTML = data.slice(0, 40).map(e => {
+      if (e.type === 'vehicle') {
+        const isEnter = e.status === 'occupied'
+        return `
+          <div class="log-item ${isEnter ? 'enter' : 'exit'}">
+            <div class="log-time">${e.timestamp}</div>
+            <div class="log-msg">${isEnter ? '🚗 Vehicle Entered' : '✅ Vehicle Left'}</div>
+            <div class="log-slot">Slot ${e.slot} → ${e.status}</div>
+          </div>`
+      } else {
+        const icons = { reserved:'🔶', cancelled:'❌', expired:'⏱', fulfilled:'✅', 'admin-cancelled':'🛑' }
+        const cls = e.action === 'reserved' ? 'resin' : 'resout'
+        return `
+          <div class="log-item ${cls}">
+            <div class="log-time">${e.timestamp}</div>
+            <div class="log-msg">${icons[e.action] || '📋'} ${e.action.charAt(0).toUpperCase()+e.action.slice(1)}: ${e.name || ''}</div>
+            <div class="log-slot">Slot ${e.slot}${e.plate ? ' · ' + e.plate : ''}</div>
+          </div>`
+      }
+    }).join('')
+  }
+
+  async function adminCancel(slot) {
+    if (!confirm(`Cancel reservation for Slot ${slot}?`)) return
+    try {
+      const res = await fetch(`${BACKEND}/admin/reserve/${slot}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!data.ok) alert(data.error)
+    } catch (e) {
+      alert('Cannot connect to server')
+    }
+  }
 </script>
 </body>
 </html>

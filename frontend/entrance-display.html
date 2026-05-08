@@ -5,498 +5,541 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ParkaSense — Entrance Display</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Barlow:wght@400;600;700&display=swap');
-
   :root {
-    --green:  #00FF87;
-    --red:    #FF3B3B;
-    --yellow: #FFD600;
-    --bg:     #0A0E1A;
-    --panel:  #0F1628;
-    --border: #1E2D4A;
-    --text:   #E8F0FF;
-    --dim:    #4A6080;
+    --bg:       #080D18;
+    --surface:  #0E1628;
+    --card:     #131E32;
+    --border:   #1E2D48;
+    --text:     #E8EDF5;
+    --muted:    #4A5A7A;
+    --blue:     #3B82F6;
+    --blue-dim: rgba(59,130,246,0.10);
+    --blue-glow:rgba(59,130,246,0.25);
+    --green:    #22C55E;
+    --green-dim:rgba(34,197,94,0.10);
+    --red:      #EF4444;
+    --red-dim:  rgba(239,68,68,0.10);
+    --amber:    #F59E0B;
+    --amber-dim:rgba(245,158,11,0.10);
   }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin:0; padding:0; box-sizing:border-box; }
 
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: 'Barlow', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    position: relative;
   }
 
-  /* Animated grid background */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,255,135,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,255,135,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .container {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    padding: 24px 32px;
-  }
-
-  /* ── HEADER ── */
-  .header {
+  /* ── TOPBAR ── */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    height: 56px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 28px;
+    flex-shrink: 0;
   }
 
-  .logo {
+  .brand {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
   }
 
-  .logo-icon {
-    width: 44px; height: 44px;
-    border: 2px solid var(--green);
-    border-radius: 8px;
+  .brand-mark {
+    width: 36px; height: 36px;
+    background: var(--blue);
+    border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
-    box-shadow: 0 0 14px rgba(0,255,135,0.3);
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 17px;
+    color: white;
+    box-shadow: 0 0 16px var(--blue-glow);
   }
 
-  .logo-text {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 28px;
-    letter-spacing: 3px;
-    color: var(--text);
-  }
+  .brand-text { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: var(--text); }
+  .brand-sub  { font-size: 9px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 1px; }
 
-  .logo-sub {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
-    color: var(--dim);
-    letter-spacing: 2px;
-    margin-top: 2px;
-  }
-
-  .header-right {
-    text-align: right;
-  }
-
-  .live-badge {
-    display: inline-flex;
+  .topbar-right {
+    display: flex;
     align-items: center;
-    gap: 7px;
-    background: rgba(0,255,135,0.08);
-    border: 1px solid rgba(0,255,135,0.25);
-    border-radius: 20px;
-    padding: 5px 14px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 12px;
-    color: var(--green);
-    letter-spacing: 1px;
-    margin-bottom: 6px;
-  }
-
-  .live-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--green);
-    animation: pulse 1.4s ease-in-out infinite;
-  }
-
-  .clock {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 13px;
-    color: var(--dim);
-    letter-spacing: 1px;
-  }
-
-  /* ── BIG STATUS BANNER ── */
-  .status-banner {
-    text-align: center;
-    padding: 28px 20px;
-    border-radius: 16px;
-    border: 2px solid var(--border);
-    background: var(--panel);
-    margin-bottom: 28px;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.5s ease;
-  }
-
-  .status-banner.available {
-    border-color: var(--green);
-    box-shadow: 0 0 40px rgba(0,255,135,0.12), inset 0 0 40px rgba(0,255,135,0.04);
-  }
-
-  .status-banner.full {
-    border-color: var(--red);
-    box-shadow: 0 0 40px rgba(255,59,59,0.15), inset 0 0 40px rgba(255,59,59,0.05);
-    animation: shake 0.5s ease;
-  }
-
-  .status-label {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    color: var(--dim);
-    margin-bottom: 10px;
-  }
-
-  .status-count {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(72px, 12vw, 120px);
-    line-height: 1;
-    letter-spacing: 4px;
-    transition: color 0.4s ease;
-  }
-
-  .status-count.available { color: var(--green); text-shadow: 0 0 40px rgba(0,255,135,0.5); }
-  .status-count.full      { color: var(--red);   text-shadow: 0 0 40px rgba(255,59,59,0.5); }
-
-  .status-text {
-    font-family: 'Barlow', sans-serif;
-    font-weight: 700;
-    font-size: clamp(18px, 3vw, 28px);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-top: 6px;
-    transition: color 0.4s ease;
-  }
-
-  .status-text.available { color: rgba(0,255,135,0.8); }
-  .status-text.full      { color: rgba(255,59,59,0.8); }
-
-  .proceed-hint {
-    margin-top: 12px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 14px;
-    color: var(--dim);
-    letter-spacing: 1px;
-    min-height: 22px;
-    transition: all 0.3s ease;
-  }
-
-  .proceed-hint.lit { color: var(--green); }
-
-  /* ── SLOT GRID ── */
-  .slots-section {
-    flex: 1;
-  }
-
-  .slots-label {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 4px;
-    color: var(--dim);
-    text-transform: uppercase;
-    margin-bottom: 14px;
-  }
-
-  .slots-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
   }
 
-  .slot-card {
-    background: var(--panel);
-    border: 2px solid var(--border);
-    border-radius: 14px;
-    padding: 20px 16px;
-    text-align: center;
-    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  .live-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border: 1px solid rgba(34,197,94,0.2);
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--green);
+    background: var(--green-dim);
+  }
+
+  .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: blink 1.4s infinite;
+  }
+
+  .clock {
+    font-family: 'DM Mono', monospace;
+    font-size: 16px;
+    color: var(--muted);
+  }
+
+  /* ── BANNER ── */
+  .banner {
+    flex-shrink: 0;
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.5s ease;
     position: relative;
     overflow: hidden;
   }
 
-  .slot-card::after {
-    content: '';
+  .banner.state-ok   { background: linear-gradient(135deg, rgba(34,197,94,0.06) 0%, transparent 60%); }
+  .banner.state-low  { background: linear-gradient(135deg, rgba(245,158,11,0.08) 0%, transparent 60%); }
+  .banner.state-full { background: linear-gradient(135deg, rgba(239,68,68,0.08) 0%, transparent 60%); }
+
+  .banner-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .banner-count {
+    font-family: 'Syne', sans-serif;
+    font-size: 72px;
+    font-weight: 800;
+    line-height: 1;
+    transition: color 0.4s;
+    filter: drop-shadow(0 0 20px currentColor);
+  }
+
+  .banner-count.ok   { color: var(--green); }
+  .banner-count.low  { color: var(--amber); }
+  .banner-count.full { color: var(--red); }
+
+  .banner-msg {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-top: 4px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: color 0.4s;
+  }
+
+  .banner-msg.ok   { color: var(--green); }
+  .banner-msg.low  { color: var(--amber); }
+  .banner-msg.full { color: var(--red); }
+
+  .banner-hint {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  .banner-hint b { color: var(--text); }
+
+  .banner-glow {
     position: absolute;
-    inset: 0;
-    opacity: 0;
-    transition: opacity 0.4s ease;
+    right: -40px; top: -40px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.12;
+    transition: background 0.5s;
+    pointer-events: none;
+  }
+
+  .banner.state-ok   .banner-glow { background: var(--green); }
+  .banner.state-low  .banner-glow { background: var(--amber); }
+  .banner.state-full .banner-glow { background: var(--red); }
+
+  /* ── SLOT SECTION ── */
+  .slots-section {
+    flex: 1;
+    padding: 16px 28px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .section-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .slot-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    flex: 1;
+  }
+
+  .road-divider {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 7px 14px;
+    background: rgba(245,158,11,0.04);
+    border: 1px dashed rgba(245,158,11,0.15);
+    border-radius: 8px;
+  }
+
+  .road-line {
+    flex: 1;
+    height: 2px;
+    background: repeating-linear-gradient(90deg, rgba(245,158,11,0.5) 0, rgba(245,158,11,0.5) 10px, transparent 10px, transparent 20px);
+  }
+
+  .road-text {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--amber);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .slot-card {
     border-radius: 12px;
+    padding: 18px 12px;
+    text-align: center;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
   }
 
   .slot-card.free {
-    border-color: var(--green);
-    box-shadow: 0 0 20px rgba(0,255,135,0.15);
+    border-color: rgba(34,197,94,0.3);
+    background: var(--green-dim);
     transform: translateY(-2px);
-  }
-
-  .slot-card.free::after {
-    background: radial-gradient(circle at center, rgba(0,255,135,0.06) 0%, transparent 70%);
-    opacity: 1;
+    box-shadow: 0 4px 20px rgba(34,197,94,0.08), inset 0 0 30px rgba(34,197,94,0.03);
   }
 
   .slot-card.occupied {
-    border-color: rgba(255,59,59,0.4);
+    border-color: rgba(239,68,68,0.2);
+    background: var(--red-dim);
     opacity: 0.65;
-    transform: translateY(0);
   }
 
-  .slot-name {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 42px;
-    letter-spacing: 3px;
+  .slot-card.reserved {
+    border-color: rgba(245,158,11,0.35);
+    background: var(--amber-dim);
+  }
+
+  .slot-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    transition: color 0.35s;
     line-height: 1;
-    margin-bottom: 10px;
-    transition: color 0.4s ease;
   }
 
-  .slot-card.free     .slot-name { color: var(--green); text-shadow: 0 0 20px rgba(0,255,135,0.4); }
-  .slot-card.occupied .slot-name { color: var(--dim); }
+  .slot-card.free     .slot-num { color: var(--green); }
+  .slot-card.occupied .slot-num { color: var(--red); }
+  .slot-card.reserved .slot-num { color: var(--amber); }
 
-  .slot-status-badge {
+  .slot-badge {
     display: inline-block;
-    padding: 4px 14px;
-    border-radius: 20px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 12px;
-    letter-spacing: 2px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
-    font-weight: 600;
-    transition: all 0.4s ease;
+    padding: 2px 10px;
+    border-radius: 20px;
   }
 
-  .slot-card.free     .slot-status-badge { background: rgba(0,255,135,0.15); color: var(--green); border: 1px solid rgba(0,255,135,0.3); }
-  .slot-card.occupied .slot-status-badge { background: rgba(255,59,59,0.1);  color: var(--red);   border: 1px solid rgba(255,59,59,0.2); }
+  .slot-card.free     .slot-badge { background: rgba(34,197,94,0.15);  color: var(--green); }
+  .slot-card.occupied .slot-badge { background: rgba(239,68,68,0.15);  color: var(--red); }
+  .slot-card.reserved .slot-badge { background: rgba(245,158,11,0.15); color: var(--amber); }
+
+  .slot-res-info {
+    font-size: 9px;
+    color: var(--amber);
+    font-weight: 600;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
 
   .slot-arrow {
-    margin-top: 10px;
-    font-size: 22px;
+    font-size: 14px;
+    margin-top: 2px;
     opacity: 0;
-    transform: translateY(6px);
-    transition: all 0.4s ease;
+    transition: opacity 0.3s;
   }
 
   .slot-card.free .slot-arrow {
     opacity: 1;
-    transform: translateY(0);
-    animation: bounceDown 1.2s ease-in-out infinite;
+    color: var(--green);
+    animation: bounce 1.2s ease-in-out infinite;
   }
 
-  /* ── FOOTER LOG ── */
+  /* ── FOOTER ── */
   .footer {
-    margin-top: 20px;
-    padding-top: 16px;
+    flex-shrink: 0;
+    padding: 8px 28px;
     border-top: 1px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: space-between;
+    background: var(--surface);
   }
 
   .latest-event {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 12px;
-    color: var(--dim);
-    letter-spacing: 1px;
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
   }
 
-  .latest-event span { color: var(--text); }
+  .latest-event b { color: var(--text); }
 
-  .school-tag {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 16px;
-    letter-spacing: 3px;
-    color: var(--dim);
+  .footer-brand {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
   }
 
-  /* ── ANIMATIONS ── */
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50%       { opacity: 0.4; transform: scale(0.8); }
-  }
-
-  @keyframes bounceDown {
-    0%, 100% { transform: translateY(0); }
-    50%       { transform: translateY(5px); }
-  }
-
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    20%       { transform: translateX(-8px); }
-    40%       { transform: translateX(8px); }
-    60%       { transform: translateX(-5px); }
-    80%       { transform: translateX(5px); }
-  }
-
-  @keyframes flashIn {
-    0%   { opacity: 0; transform: scale(0.95); }
-    100% { opacity: 1; transform: scale(1); }
-  }
-
-  .flash { animation: flashIn 0.3s ease forwards; }
-
-  /* Connection lost overlay */
+  /* Connection lost banner */
   .conn-lost {
     display: none;
     position: fixed;
-    top: 16px; left: 50%;
-    transform: translateX(-50%);
-    background: rgba(255,59,59,0.15);
-    border: 1px solid var(--red);
-    border-radius: 8px;
-    padding: 8px 20px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 12px;
-    color: var(--red);
+    top: 0; left: 0; right: 0;
+    background: var(--red);
+    color: white;
+    text-align: center;
+    padding: 8px;
+    font-size: 11px;
+    font-weight: 700;
     letter-spacing: 2px;
-    z-index: 100;
+    z-index: 999;
   }
+
+  /* ── ANIMATIONS ── */
+  @keyframes blink  { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
+  @keyframes bounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(5px);} }
+  @keyframes flash  { from{opacity:0;transform:scale(0.96);} to{opacity:1;transform:scale(1);} }
+  .flash { animation: flash 0.25s ease; }
 </style>
 </head>
 <body>
 
 <div class="conn-lost" id="connLost">⚠ CONNECTION LOST — RECONNECTING...</div>
 
-<div class="container">
-
-  <!-- HEADER -->
-  <div class="header">
-    <div class="logo">
-      <div class="logo-icon">🅿</div>
-      <div>
-        <div class="logo-text">ParkaSense</div>
-        <div class="logo-sub">EXACT COLLEGES OF ASIA · SMART PARKING</div>
-      </div>
-    </div>
-    <div class="header-right">
-      <div class="live-badge"><div class="live-dot"></div> LIVE SYSTEM</div>
-      <div class="clock" id="clock">--:--:--</div>
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">P</div>
+    <div>
+      <div class="brand-text">PARKASENSE</div>
+      <div class="brand-sub">Exact Colleges of Asia · Entrance Display</div>
     </div>
   </div>
-
-  <!-- BIG STATUS BANNER -->
-  <div class="status-banner available" id="statusBanner">
-    <div class="status-label">Available Parking Slots</div>
-    <div class="status-count available" id="statusCount">3</div>
-    <div class="status-text available" id="statusText">SLOTS AVAILABLE</div>
-    <div class="proceed-hint lit" id="proceedHint">PROCEED TO AVAILABLE SLOT ↓</div>
+  <div class="topbar-right">
+    <div class="live-pill"><div class="live-dot"></div>LIVE</div>
+    <div class="clock" id="clock">--:--:--</div>
   </div>
+</div>
 
-  <!-- SLOT CARDS -->
-  <div class="slots-section">
-    <div class="slots-label">// Slot Status — Real Time</div>
-    <div class="slots-grid" id="slotsGrid">
-      <div class="slot-card free" id="card-S1">
-        <div class="slot-name">S1</div>
-        <div class="slot-status-badge">AVAILABLE</div>
-        <div class="slot-arrow">↓</div>
-      </div>
-      <div class="slot-card free" id="card-S2">
-        <div class="slot-name">S2</div>
-        <div class="slot-status-badge">AVAILABLE</div>
-        <div class="slot-arrow">↓</div>
-      </div>
-      <div class="slot-card free" id="card-S3">
-        <div class="slot-name">S3</div>
-        <div class="slot-status-badge">AVAILABLE</div>
-        <div class="slot-arrow">↓</div>
-      </div>
+<!-- BANNER -->
+<div class="banner state-ok" id="banner">
+  <div class="banner-glow"></div>
+  <div>
+    <div class="banner-label">Available Parking Slots</div>
+    <div class="banner-count ok" id="bannerCount">6</div>
+    <div class="banner-msg ok" id="bannerMsg">SLOTS AVAILABLE</div>
+    <div class="banner-hint" id="bannerHint">Proceed to any <b>green</b> slot below</div>
+  </div>
+</div>
+
+<!-- SLOTS -->
+<div class="slots-section">
+  <div class="section-label">// Real-time Slot Status</div>
+
+  <div class="slot-grid">
+    <!-- Top row -->
+    <div class="slot-card free" id="card-S1">
+      <div class="slot-num">S1</div>
+      <div class="slot-badge">Available</div>
+      <div class="slot-res-info" id="rinf-S1"></div>
+      <div class="slot-arrow">↓</div>
+    </div>
+    <div class="slot-card free" id="card-S2">
+      <div class="slot-num">S2</div>
+      <div class="slot-badge">Available</div>
+      <div class="slot-res-info" id="rinf-S2"></div>
+      <div class="slot-arrow">↓</div>
+    </div>
+    <div class="slot-card free" id="card-S3">
+      <div class="slot-num">S3</div>
+      <div class="slot-badge">Available</div>
+      <div class="slot-res-info" id="rinf-S3"></div>
+      <div class="slot-arrow">↓</div>
+    </div>
+
+    <!-- Road -->
+    <div class="road-divider">
+      <div class="road-line"></div>
+      <div class="road-text">← Entrance / Exit Lane →</div>
+      <div class="road-line"></div>
+    </div>
+
+    <!-- Bottom row -->
+    <div class="slot-card free" id="card-S4">
+      <div class="slot-num">S4</div>
+      <div class="slot-badge">Available</div>
+      <div class="slot-res-info" id="rinf-S4"></div>
+      <div class="slot-arrow">↑</div>
+    </div>
+    <div class="slot-card free" id="card-S5">
+      <div class="slot-num">S5</div>
+      <div class="slot-badge">Available</div>
+      <div class="slot-res-info" id="rinf-S5"></div>
+      <div class="slot-arrow">↑</div>
+    </div>
+    <div class="slot-card free" id="card-S6">
+      <div class="slot-num">S6</div>
+      <div class="slot-badge">Available</div>
+      <div class="slot-res-info" id="rinf-S6"></div>
+      <div class="slot-arrow">↑</div>
     </div>
   </div>
+</div>
 
-  <!-- FOOTER -->
-  <div class="footer">
-    <div class="latest-event" id="latestEvent">// Waiting for first detection...</div>
-    <div class="school-tag">ECA · PARKING SYSTEM v1.0</div>
-  </div>
-
+<!-- FOOTER -->
+<div class="footer">
+  <div class="latest-event" id="latestEvent">Waiting for vehicle activity...</div>
+  <div class="footer-brand">ECA · ParkaSense v2.0</div>
 </div>
 
 <script>
-  // ── CLOCK ──
-  function updateClock() {
-    const now = new Date()
+  // Clock
+  setInterval(() => {
     document.getElementById('clock').textContent =
-      now.toLocaleTimeString('en-PH', { hour12: false })
-  }
-  updateClock()
-  setInterval(updateClock, 1000)
+      new Date().toLocaleTimeString('en-PH', { hour12: false })
+  }, 1000)
 
-  // ── SOCKET.IO — connect to backend ──
   const socket = io('http://localhost:3000')
 
-  socket.on('connect', () => {
-    document.getElementById('connLost').style.display = 'none'
-  })
+  socket.on('connect',    () => { document.getElementById('connLost').style.display = 'none' })
+  socket.on('disconnect', () => { document.getElementById('connLost').style.display = 'block' })
 
-  socket.on('disconnect', () => {
-    document.getElementById('connLost').style.display = 'block'
-  })
+  socket.on('slot-update', ({ slots, reservations, available, log }) => {
+    const res = reservations || {}
+    const total = Object.keys(slots).length
 
-  // ── MAIN UPDATE HANDLER ──
-  socket.on('slot-update', (data) => {
-    const { slots, available, total, log } = data
-
-    // Update each slot card
+    // Slots
     Object.entries(slots).forEach(([name, status]) => {
       const card  = document.getElementById(`card-${name}`)
-      const badge = card.querySelector('.slot-status-badge')
+      const badge = card.querySelector('.slot-badge')
+      const rinf  = document.getElementById(`rinf-${name}`)
       const arrow = card.querySelector('.slot-arrow')
+      const wasClass = card.className
 
-      const wasFree = card.classList.contains('free')
-      const isFree  = status === 'free'
+      const isBottom = ['S4','S5','S6'].includes(name)
+      arrow.textContent = isBottom ? '↑' : '↓'
 
-      if (wasFree !== isFree) {
-        card.classList.add('flash')
-        setTimeout(() => card.classList.remove('flash'), 300)
+      if (status === 'occupied') {
+        card.className = 'slot-card occupied'
+        badge.textContent = 'Occupied'
+        rinf.textContent = ''
+      } else if (res[name]) {
+        card.className = 'slot-card reserved'
+        badge.textContent = 'Reserved'
+        rinf.textContent = '🔶 ' + res[name].name.split(' ')[0]
+      } else {
+        card.className = 'slot-card free'
+        badge.textContent = 'Available'
+        rinf.textContent = ''
       }
 
-      card.className = `slot-card ${isFree ? 'free' : 'occupied'}`
-      badge.textContent = isFree ? 'AVAILABLE' : 'OCCUPIED'
+      if (wasClass !== card.className) {
+        card.classList.add('flash')
+        setTimeout(() => card.classList.remove('flash'), 250)
+      }
     })
 
-    // Update big status banner
-    const banner     = document.getElementById('statusBanner')
-    const countEl    = document.getElementById('statusCount')
-    const textEl     = document.getElementById('statusText')
-    const hintEl     = document.getElementById('proceedHint')
+    // Banner
+    const banner = document.getElementById('banner')
+    const count  = document.getElementById('bannerCount')
+    const msg    = document.getElementById('bannerMsg')
+    const hint   = document.getElementById('bannerHint')
 
-    countEl.textContent = available
-    countEl.className   = `status-count ${available > 0 ? 'available' : 'full'}`
+    count.textContent = available
 
     if (available === 0) {
-      banner.className  = 'status-banner full'
-      textEl.className  = 'status-text full'
-      textEl.textContent = 'PARKING FULL'
-      hintEl.textContent = 'PLEASE FIND ANOTHER PARKING AREA'
-      hintEl.className  = 'proceed-hint'
+      banner.className = 'banner state-full'
+      count.className  = 'banner-count full'
+      msg.className    = 'banner-msg full'
+      msg.textContent  = 'PARKING FULL'
+      hint.innerHTML   = 'No slots available. Please find another parking area.'
+    } else if (available <= 2) {
+      banner.className = 'banner state-low'
+      count.className  = 'banner-count low'
+      msg.className    = 'banner-msg low'
+      msg.textContent  = available === 1 ? 'SLOT AVAILABLE' : 'SLOTS AVAILABLE'
+      const first = Object.entries(slots).find(([n, s]) => s === 'free' && !res[n])?.[0]
+      hint.innerHTML = first
+        ? `⚠ Almost full! Proceed to Slot <b>${first}</b>`
+        : 'Slots may be reserved — check availability below'
     } else {
-      banner.className  = 'status-banner available'
-      textEl.className  = 'status-text available'
-      textEl.textContent = available === 1 ? 'SLOT AVAILABLE' : 'SLOTS AVAILABLE'
-      // find first free slot
-      const firstFree = Object.entries(slots).find(([,s]) => s === 'free')?.[0]
-      hintEl.textContent = `PROCEED TO SLOT ${firstFree} ↓`
-      hintEl.className  = 'proceed-hint lit'
+      banner.className = 'banner state-ok'
+      count.className  = 'banner-count ok'
+      msg.className    = 'banner-msg ok'
+      msg.textContent  = 'SLOTS AVAILABLE'
+      const first = Object.entries(slots).find(([n, s]) => s === 'free' && !res[n])?.[0]
+      hint.innerHTML = first
+        ? `Proceed to any <b>green</b> slot · Nearest: <b>Slot ${first}</b>`
+        : 'Check slot status below'
     }
 
-    // Update latest event log
+    // Latest event
     if (log && log.length > 0) {
       const e = log[0]
-      const action = e.status === 'occupied' ? 'VEHICLE ENTERED' : 'VEHICLE LEFT'
+      const action = e.status === 'occupied' ? 'Vehicle entered' : 'Vehicle left'
       document.getElementById('latestEvent').innerHTML =
-        `// <span>${e.timestamp}</span> — ${e.slot}: ${action}`
+        `<b>${e.timestamp}</b> — Slot ${e.slot}: ${action}`
     }
   })
 </script>
