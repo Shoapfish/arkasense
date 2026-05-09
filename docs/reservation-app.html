@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParkaSense — Reserve a Spot</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:      #0B0F1A;
+    --ink2:     #1E2535;
+    --slate:    #3D4A63;
+    --muted:    #7B8BA4;
+    --line:     #E2E8F0;
+    --surface:  #F7F9FC;
+    --white:    #FFFFFF;
+    --blue:     #2563EB;
+    --blue-dim: #EFF6FF;
+    --blue-mid: #BFDBFE;
+    --green:    #16A34A;
+    --green-dim:#F0FDF4;
+    --red:      #DC2626;
+    --red-dim:  #FEF2F2;
+    --amber:    #D97706;
+    --amber-dim:#FFFBEB;
+    --radius:   14px;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--surface);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--ink);
+    padding: 0 24px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-mark {
+    width: 34px; height: 34px;
+    background: var(--blue);
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    color: white;
+  }
+
+  .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    color: white;
+    letter-spacing: 0.5px;
+  }
+
+  .logo-sub {
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 1px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.6);
+    font-weight: 500;
+    letter-spacing: 1px;
+  }
+
+  .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #4ADE80;
+    animation: blink 1.4s infinite;
+  }
+
+  /* ── AVAILABILITY BAR ── */
+  .avail-bar {
+    background: var(--blue);
+    color: white;
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: background 0.4s;
+  }
+
+  .avail-bar.full { background: var(--red); }
+  .avail-bar.low  { background: var(--amber); }
+
+  /* ── MAIN ── */
+  .container {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+  }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  /* ── SLOT GRID ── */
+  .lot-container {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .lot-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .lot-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--ink);
+  }
+
+  .lot-legend {
+    display: flex;
+    gap: 12px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+
+  .slot-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .road-row {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 14px;
+    background: #F1F5F9;
+    border-radius: 8px;
+    border: 1px dashed #CBD5E1;
+  }
+
+  .road-dash {
+    flex: 1;
+    height: 2px;
+    background: repeating-linear-gradient(90deg, var(--amber) 0, var(--amber) 10px, transparent 10px, transparent 18px);
+  }
+
+  .road-text {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    color: var(--amber);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .slot {
+    border-radius: 11px;
+    padding: 14px 10px;
+    text-align: center;
+    border: 2px solid var(--line);
+    background: var(--white);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+    user-select: none;
+  }
+
+  .slot:hover:not(.occupied):not(.reserved) {
+    border-color: var(--blue);
+    background: var(--blue-dim);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37,99,235,0.12);
+  }
+
+  .slot.free {
+    border-color: #BBF7D0;
+    background: var(--green-dim);
+  }
+
+  .slot.selected {
+    border-color: var(--blue) !important;
+    background: var(--blue-dim) !important;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.18);
+    transform: translateY(-2px);
+  }
+
+  .slot.occupied {
+    border-color: #FECACA;
+    background: var(--red-dim);
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  .slot.reserved {
+    border-color: #FDE68A;
+    background: var(--amber-dim);
+    cursor: not-allowed;
+  }
+
+  .slot-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 4px;
+    transition: color 0.25s;
+  }
+
+  .slot.free     .slot-name { color: var(--green); }
+  .slot.selected .slot-name { color: var(--blue); }
+  .slot.occupied .slot-name { color: var(--red); }
+  .slot.reserved .slot-name { color: var(--amber); }
+
+  .slot-status {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 20px;
+    display: inline-block;
+    transition: all 0.25s;
+  }
+
+  .slot.free     .slot-status { background: #BBF7D0; color: var(--green); }
+  .slot.selected .slot-status { background: var(--blue-mid); color: var(--blue); }
+  .slot.occupied .slot-status { background: #FECACA; color: var(--red); }
+  .slot.reserved .slot-status { background: #FDE68A; color: var(--amber); }
+
+  .slot-res-name {
+    font-size: 9px;
+    color: var(--amber);
+    font-weight: 600;
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ── FORM CARD ── */
+  .form-card {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 20px;
+    transition: opacity 0.3s;
+  }
+
+  .form-card.dimmed { opacity: 0.4; pointer-events: none; }
+
+  .form-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+
+  .form-subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+
+  .selected-slot-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--blue-dim);
+    border: 1px solid var(--blue-mid);
+    color: var(--blue);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  .field-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .field.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--slate);
+    text-transform: uppercase;
+  }
+
+  input, select {
+    height: 42px;
+    padding: 0 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 9px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--ink);
+    background: var(--surface);
+    outline: none;
+    transition: border 0.2s, box-shadow 0.2s;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    background: white;
+  }
+
+  .duration-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .dur-btn {
+    height: 36px;
+    padding: 0 14px;
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--slate);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .dur-btn.active {
+    border-color: var(--blue);
+    background: var(--blue-dim);
+    color: var(--blue);
+  }
+
+  .btn-reserve {
+    width: 100%;
+    height: 48px;
+    background: var(--blue);
+    color: white;
+    border: none;
+    border-radius: 11px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-reserve:hover { background: #1D4ED8; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(37,99,235,0.25); }
+  .btn-reserve:disabled { background: var(--muted); cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* ── SUCCESS CARD ── */
+  .success-card {
+    display: none;
+    background: var(--green-dim);
+    border: 2px solid #86EFAC;
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+    animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  .success-card.show { display: block; }
+
+  .success-icon { font-size: 40px; margin-bottom: 8px; }
+
+  .success-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--green);
+    margin-bottom: 4px;
+  }
+
+  .success-sub {
+    font-size: 13px;
+    color: var(--slate);
+    margin-bottom: 16px;
+  }
+
+  .confirmation-box {
+    background: white;
+    border: 1px solid #BBF7D0;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+    text-align: left;
+  }
+
+  .conf-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    font-size: 13px;
+    border-bottom: 1px solid #F0FDF4;
+  }
+
+  .conf-row:last-child { border-bottom: none; }
+  .conf-key { color: var(--muted); font-weight: 500; }
+  .conf-val { font-weight: 700; color: var(--ink); }
+  .conf-code {
+    background: var(--blue-dim);
+    color: var(--blue);
+    padding: 2px 10px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 3px;
+  }
+
+  .btn-cancel {
+    width: 100%;
+    height: 42px;
+    background: white;
+    color: var(--red);
+    border: 1.5px solid #FECACA;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-cancel:hover { background: var(--red-dim); }
+
+  .btn-new-res {
+    width: 100%;
+    height: 42px;
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1.5px solid #BBF7D0;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all 0.2s;
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--ink);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 999;
+    white-space: nowrap;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--red); }
+  .toast.success { background: var(--green); }
+
+  /* ── MY RESERVATION LOOKUP ── */
+  .lookup-card {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+
+  .lookup-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .lookup-row input { flex: 1; }
+
+  .btn-lookup {
+    height: 42px;
+    padding: 0 18px;
+    background: var(--ink);
+    color: white;
+    border: none;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-lookup:hover { background: var(--ink2); }
+
+  .lookup-result {
+    display: none;
+    margin-top: 14px;
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    font-size: 13px;
+  }
+
+  .lookup-result.show { display: block; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
+  @keyframes popIn { from{opacity:0;transform:scale(0.92);} to{opacity:1;transform:scale(1);} }
+  @keyframes slideDown { from{opacity:0;transform:translateY(-8px);} to{opacity:1;transform:translateY(0);} }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-mark">P</div>
+    <div>
+      <div class="logo-text">ParkaSense</div>
+      <div class="logo-sub">ECA · Slot Reservation</div>
+    </div>
+  </div>
+  <div class="live-badge">
+    <div class="live-dot"></div>
+    LIVE
+  </div>
+</header>
+
+<!-- AVAILABILITY BAR -->
+<div class="avail-bar" id="availBar">
+  ✓ <span id="availText">6 slots available</span>
+</div>
+
+<!-- MAIN -->
+<div class="container">
+
+  <!-- SUCCESS CARD (shown after reserve) -->
+  <div class="success-card" id="successCard">
+    <div class="success-icon">🎉</div>
+    <div class="success-title">Slot Reserved!</div>
+    <div class="success-sub">Your spot is held. Show your code when you arrive.</div>
+    <div class="confirmation-box" id="confirmBox"></div>
+    <button class="btn-cancel" id="btnCancelRes">Cancel My Reservation</button>
+    <button class="btn-new-res" id="btnNewRes">Make Another Reservation</button>
+  </div>
+
+  <!-- PARKING LOT MAP -->
+  <div class="section-label">// Select a Parking Slot</div>
+  <div class="lot-container">
+    <div class="lot-header">
+      <div class="lot-title">ECA Parking Lot</div>
+      <div class="lot-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#16A34A"></div>Free</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#D97706"></div>Reserved</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#DC2626"></div>Occupied</div>
+      </div>
+    </div>
+
+    <div class="slot-grid">
+      <!-- Top row -->
+      <div class="slot free" id="slot-S1" data-slot="S1" onclick="selectSlot('S1')">
+        <div class="slot-name">S1</div>
+        <div class="slot-status">Free</div>
+        <div class="slot-res-name" id="res-name-S1"></div>
+      </div>
+      <div class="slot free" id="slot-S2" data-slot="S2" onclick="selectSlot('S2')">
+        <div class="slot-name">S2</div>
+        <div class="slot-status">Free</div>
+        <div class="slot-res-name" id="res-name-S2"></div>
+      </div>
+      <div class="slot free" id="slot-S3" data-slot="S3" onclick="selectSlot('S3')">
+        <div class="slot-name">S3</div>
+        <div class="slot-status">Free</div>
+        <div class="slot-res-name" id="res-name-S3"></div>
+      </div>
+
+      <!-- Road -->
+      <div class="road-row">
+        <div class="road-dash"></div>
+        <div class="road-text">← Entrance / Exit →</div>
+        <div class="road-dash"></div>
+      </div>
+
+      <!-- Bottom row -->
+      <div class="slot free" id="slot-S4" data-slot="S4" onclick="selectSlot('S4')">
+        <div class="slot-name">S4</div>
+        <div class="slot-status">Free</div>
+        <div class="slot-res-name" id="res-name-S4"></div>
+      </div>
+      <div class="slot free" id="slot-S5" data-slot="S5" onclick="selectSlot('S5')">
+        <div class="slot-name">S5</div>
+        <div class="slot-status">Free</div>
+        <div class="slot-res-name" id="res-name-S5"></div>
+      </div>
+      <div class="slot free" id="slot-S6" data-slot="S6" onclick="selectSlot('S6')">
+        <div class="slot-name">S6</div>
+        <div class="slot-status">Free</div>
+        <div class="slot-res-name" id="res-name-S6"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div class="form-card dimmed" id="formCard">
+    <div class="form-title">Reservation Details</div>
+    <div class="form-subtitle">Fill in your details to reserve the selected slot</div>
+    <div class="selected-slot-tag" id="selectedTag">🅿 No slot selected</div>
+
+    <div class="field-group">
+      <div class="field">
+        <label>Full Name *</label>
+        <input type="text" id="inpName" placeholder="Juan Dela Cruz" autocomplete="name">
+      </div>
+      <div class="field">
+        <label>Plate Number *</label>
+        <input type="text" id="inpPlate" placeholder="ABC 123" maxlength="10">
+      </div>
+      <div class="field full">
+        <label>Phone Number (optional)</label>
+        <input type="tel" id="inpPhone" placeholder="09XX XXX XXXX">
+      </div>
+    </div>
+
+    <div style="margin-bottom:8px;">
+      <label style="display:block;margin-bottom:8px;">Hold Duration</label>
+      <div class="duration-group">
+        <button class="dur-btn active" data-min="15" onclick="setDuration(this, 15)">15 min</button>
+        <button class="dur-btn" data-min="30" onclick="setDuration(this, 30)">30 min</button>
+        <button class="dur-btn" data-min="60" onclick="setDuration(this, 60)">1 hr</button>
+        <button class="dur-btn" data-min="120" onclick="setDuration(this, 120)">2 hrs</button>
+        <button class="dur-btn" data-min="180" onclick="setDuration(this, 180)">3 hrs</button>
+        <button class="dur-btn" data-min="300" onclick="setDuration(this, 300)">5 hrs</button>
+        <button class="dur-btn" data-min="480" onclick="setDuration(this, 480)">8 hrs</button>
+        <button class="dur-btn" data-min="600" onclick="setDuration(this, 600)">10 hrs</button>
+      </div>
+    </div>
+
+    <button class="btn-reserve" id="btnReserve" onclick="submitReservation()">
+      🅿 Reserve Slot
+    </button>
+  </div>
+
+  <!-- LOOKUP -->
+  <div class="section-label">// Check or Cancel My Reservation</div>
+  <div class="lookup-card">
+    <div class="form-title" style="font-size:14px;margin-bottom:4px;">Look Up Reservation</div>
+    <div class="form-subtitle">Enter your confirmation code to view or cancel</div>
+    <div class="lookup-row">
+      <input type="text" id="inpCode" placeholder="Enter code (e.g. AB12CD)" maxlength="6" style="text-transform:uppercase;letter-spacing:3px;font-family:monospace;font-weight:700;">
+      <button class="btn-lookup" onclick="lookupReservation()">Look Up</button>
+    </div>
+    <div class="lookup-result" id="lookupResult"></div>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  const BACKEND = 'http://localhost:3000'
+  const socket  = io(BACKEND)
+
+  let selectedSlot = null
+  let selectedDuration = 15
+  let myCode = null
+  let mySlot = null
+
+  // ── Socket ──
+  socket.on('slot-update', ({ slots, reservations, available }) => {
+    updateUI(slots, reservations, available)
+  })
+
+  function updateUI(slots, reservations, available) {
+    // Availability bar
+    const bar = document.getElementById('availBar')
+    const txt = document.getElementById('availText')
+    txt.textContent = available === 0 ? 'Parking Full — No available slots'
+      : `${available} slot${available !== 1 ? 's' : ''} available`
+    bar.className = 'avail-bar' + (available === 0 ? ' full' : available <= 2 ? ' low' : '')
+
+    // Slots
+    const allSlots = Object.keys(slots)
+    allSlots.forEach(name => {
+      const el      = document.getElementById(`slot-${name}`)
+      const nameEl  = document.getElementById(`res-name-${name}`)
+      const status  = el.querySelector('.slot-status')
+      const isRes   = !!reservations[name]
+      const isOcc   = slots[name] === 'occupied'
+
+      // Don't override selected highlight
+      if (name === selectedSlot && !isOcc && !isRes) {
+        el.className = 'slot selected'
+        status.textContent = 'Selected'
+        nameEl.textContent = ''
+        return
+      }
+
+      if (isOcc) {
+        el.className = 'slot occupied'
+        status.textContent = 'Occupied'
+        nameEl.textContent = ''
+      } else if (isRes) {
+        el.className = 'slot reserved'
+        status.textContent = 'Reserved'
+        nameEl.textContent = '👤 ' + reservations[name].name.split(' ')[0]
+      } else {
+        el.className = 'slot free'
+        status.textContent = 'Free'
+        nameEl.textContent = ''
+      }
+    })
+  }
+
+  // ── Slot selection ──
+  function selectSlot(name) {
+    const el = document.getElementById(`slot-${name}`)
+    if (el.classList.contains('occupied') || el.classList.contains('reserved')) {
+      showToast('This slot is not available', 'error')
+      return
+    }
+
+    // Deselect previous
+    if (selectedSlot && selectedSlot !== name) {
+      const prev = document.getElementById(`slot-${selectedSlot}`)
+      if (prev) {
+        prev.className = 'slot free'
+        prev.querySelector('.slot-status').textContent = 'Free'
+      }
+    }
+
+    selectedSlot = name
+    el.className = 'slot selected'
+    el.querySelector('.slot-status').textContent = 'Selected'
+
+    document.getElementById('selectedTag').textContent = `🅿 Slot ${name} selected`
+    document.getElementById('formCard').classList.remove('dimmed')
+  }
+
+  // ── Duration ──
+  function setDuration(btn, min) {
+    document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'))
+    btn.classList.add('active')
+    selectedDuration = min
+  }
+
+  // ── Submit reservation ──
+  async function submitReservation() {
+    const name  = document.getElementById('inpName').value.trim()
+    const plate = document.getElementById('inpPlate').value.trim()
+    const phone = document.getElementById('inpPhone').value.trim()
+
+    if (!selectedSlot) return showToast('Please select a slot first', 'error')
+    if (!name)  return showToast('Please enter your name', 'error')
+    if (!plate) return showToast('Please enter your plate number', 'error')
+
+    const btn = document.getElementById('btnReserve')
+    btn.disabled = true
+    btn.textContent = 'Reserving...'
+
+    try {
+      const res = await fetch(`${BACKEND}/reserve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slot: selectedSlot,
+          name, plate, phone,
+          duration: selectedDuration
+        })
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        showToast(data.error || 'Reservation failed', 'error')
+        btn.disabled = false
+        btn.textContent = '🅿 Reserve Slot'
+        return
+      }
+
+      // Store for cancel
+      myCode = data.code
+      mySlot = data.slot
+
+      // Show success card
+      document.getElementById('successCard').classList.add('show')
+      document.getElementById('formCard').classList.add('dimmed')
+      document.getElementById('confirmBox').innerHTML = `
+        <div class="conf-row"><span class="conf-key">Slot</span><span class="conf-val">Slot ${data.slot}</span></div>
+        <div class="conf-row"><span class="conf-key">Name</span><span class="conf-val">${name}</span></div>
+        <div class="conf-row"><span class="conf-key">Plate</span><span class="conf-val">${plate.toUpperCase()}</span></div>
+        <div class="conf-row"><span class="conf-key">Duration</span><span class="conf-val">${selectedDuration} minutes</span></div>
+        <div class="conf-row"><span class="conf-key">Expires at</span><span class="conf-val">${data.expiresAt}</span></div>
+        <div class="conf-row"><span class="conf-key">Your Code</span><span class="conf-val"><span class="conf-code">${data.code}</span></span></div>
+      `
+      document.getElementById('confirmBox').insertAdjacentHTML('afterend',
+        '<p style="font-size:11px;color:#6B7280;text-align:center;margin-top:8px;">📌 Save your code — you need it to cancel</p>')
+
+      showToast('Slot reserved successfully!', 'success')
+    } catch (e) {
+      showToast('Could not connect to server', 'error')
+    }
+
+    btn.disabled = false
+    btn.textContent = '🅿 Reserve Slot'
+  }
+
+  // ── Cancel reservation ──
+  document.getElementById('btnCancelRes').addEventListener('click', async () => {
+    if (!myCode || !mySlot) return
+    if (!confirm('Cancel your reservation for Slot ' + mySlot + '?')) return
+
+    try {
+      const res = await fetch(`${BACKEND}/reserve/${mySlot}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: myCode })
+      })
+      const data = await res.json()
+      if (data.ok) {
+        showToast('Reservation cancelled', 'success')
+        resetForm()
+      } else {
+        showToast(data.error, 'error')
+      }
+    } catch (e) {
+      showToast('Could not connect to server', 'error')
+    }
+  })
+
+  document.getElementById('btnNewRes').addEventListener('click', resetForm)
+
+  function resetForm() {
+    myCode = null; mySlot = null; selectedSlot = null; selectedDuration = 15
+    document.getElementById('successCard').classList.remove('show')
+    document.getElementById('formCard').classList.add('dimmed')
+    document.getElementById('inpName').value = ''
+    document.getElementById('inpPlate').value = ''
+    document.getElementById('inpPhone').value = ''
+    document.getElementById('selectedTag').textContent = '🅿 No slot selected'
+    document.querySelectorAll('.dur-btn').forEach((b,i) => { b.classList.toggle('active', i===0) })
+  }
+
+  // ── Lookup ──
+  async function lookupReservation() {
+    const code = document.getElementById('inpCode').value.trim().toUpperCase()
+    if (!code || code.length < 6) return showToast('Enter a valid 6-character code', 'error')
+
+    try {
+      const res  = await fetch(`${BACKEND}/status`)
+      const data = await res.json()
+      const match = Object.entries(data.reservations || {}).find(([, r]) => r.code === code)
+      const el = document.getElementById('lookupResult')
+
+      if (!match) {
+        el.className = 'lookup-result show'
+        el.innerHTML = `<span style="color:var(--red);font-weight:600;">No reservation found for code <span style="font-family:monospace">${code}</span></span>`
+        return
+      }
+
+      const [slot, r] = match
+      el.className = 'lookup-result show'
+      el.innerHTML = `
+        <div style="font-weight:700;margin-bottom:8px;color:var(--green);">✓ Reservation Found — Slot ${slot}</div>
+        <div class="conf-row"><span class="conf-key">Name</span><span class="conf-val">${r.name}</span></div>
+        <div class="conf-row"><span class="conf-key">Plate</span><span class="conf-val">${r.plate}</span></div>
+        <div class="conf-row"><span class="conf-key">Expires</span><span class="conf-val">${r.expiresAtDisplay}</span></div>
+        <button class="btn-cancel" style="margin-top:10px;" onclick="cancelByCode('${slot}','${code}')">Cancel This Reservation</button>
+      `
+    } catch (e) {
+      showToast('Could not connect to server', 'error')
+    }
+  }
+
+  async function cancelByCode(slot, code) {
+    if (!confirm('Cancel reservation for Slot ' + slot + '?')) return
+    try {
+      const res = await fetch(`${BACKEND}/reserve/${slot}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+      })
+      const data = await res.json()
+      if (data.ok) {
+        showToast('Reservation cancelled', 'success')
+        document.getElementById('lookupResult').className = 'lookup-result'
+        document.getElementById('inpCode').value = ''
+      } else {
+        showToast(data.error, 'error')
+      }
+    } catch (e) {
+      showToast('Could not connect to server', 'error')
+    }
+  }
+
+  // ── Toast ──
+  function showToast(msg, type = '') {
+    const t = document.getElementById('toast')
+    t.textContent = msg
+    t.className = `toast ${type} show`
+    setTimeout(() => t.className = 'toast', 3000)
+  }
+</script>
+</body>
+</html>

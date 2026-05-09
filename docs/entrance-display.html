@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParkaSense — Entrance Display</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #080D18;
+    --surface:  #0E1628;
+    --card:     #131E32;
+    --border:   #1E2D48;
+    --text:     #E8EDF5;
+    --muted:    #4A5A7A;
+    --blue:     #3B82F6;
+    --blue-dim: rgba(59,130,246,0.10);
+    --blue-glow:rgba(59,130,246,0.25);
+    --green:    #22C55E;
+    --green-dim:rgba(34,197,94,0.10);
+    --red:      #EF4444;
+    --red-dim:  rgba(239,68,68,0.10);
+    --amber:    #F59E0B;
+    --amber-dim:rgba(245,158,11,0.10);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brand-mark {
+    width: 36px; height: 36px;
+    background: var(--blue);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 17px;
+    color: white;
+    box-shadow: 0 0 16px var(--blue-glow);
+  }
+
+  .brand-text { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: var(--text); }
+  .brand-sub  { font-size: 9px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 1px; }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .live-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border: 1px solid rgba(34,197,94,0.2);
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--green);
+    background: var(--green-dim);
+  }
+
+  .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: blink 1.4s infinite;
+  }
+
+  .clock {
+    font-family: 'DM Mono', monospace;
+    font-size: 16px;
+    color: var(--muted);
+  }
+
+  /* ── BANNER ── */
+  .banner {
+    flex-shrink: 0;
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.5s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .banner.state-ok   { background: linear-gradient(135deg, rgba(34,197,94,0.06) 0%, transparent 60%); }
+  .banner.state-low  { background: linear-gradient(135deg, rgba(245,158,11,0.08) 0%, transparent 60%); }
+  .banner.state-full { background: linear-gradient(135deg, rgba(239,68,68,0.08) 0%, transparent 60%); }
+
+  .banner-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .banner-count {
+    font-family: 'Syne', sans-serif;
+    font-size: 72px;
+    font-weight: 800;
+    line-height: 1;
+    transition: color 0.4s;
+    filter: drop-shadow(0 0 20px currentColor);
+  }
+
+  .banner-count.ok   { color: var(--green); }
+  .banner-count.low  { color: var(--amber); }
+  .banner-count.full { color: var(--red); }
+
+  .banner-msg {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-top: 4px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: color 0.4s;
+  }
+
+  .banner-msg.ok   { color: var(--green); }
+  .banner-msg.low  { color: var(--amber); }
+  .banner-msg.full { color: var(--red); }
+
+  .banner-hint {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  .banner-hint b { color: var(--text); }
+
+  .banner-glow {
+    position: absolute;
+    right: -40px; top: -40px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.12;
+    transition: background 0.5s;
+    pointer-events: none;
+  }
+
+  .banner.state-ok   .banner-glow { background: var(--green); }
+  .banner.state-low  .banner-glow { background: var(--amber); }
+  .banner.state-full .banner-glow { background: var(--red); }
+
+  /* ── SLOT SECTION ── */
+  .slots-section {
+    flex: 1;
+    padding: 16px 28px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .section-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .slot-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    flex: 1;
+  }
+
+  .road-divider {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 7px 14px;
+    background: rgba(245,158,11,0.04);
+    border: 1px dashed rgba(245,158,11,0.15);
+    border-radius: 8px;
+  }
+
+  .road-line {
+    flex: 1;
+    height: 2px;
+    background: repeating-linear-gradient(90deg, rgba(245,158,11,0.5) 0, rgba(245,158,11,0.5) 10px, transparent 10px, transparent 20px);
+  }
+
+  .road-text {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--amber);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .slot-card {
+    border-radius: 12px;
+    padding: 18px 12px;
+    text-align: center;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .slot-card.free {
+    border-color: rgba(34,197,94,0.3);
+    background: var(--green-dim);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(34,197,94,0.08), inset 0 0 30px rgba(34,197,94,0.03);
+  }
+
+  .slot-card.occupied {
+    border-color: rgba(239,68,68,0.2);
+    background: var(--red-dim);
+    opacity: 0.65;
+  }
+
+  .slot-card.reserved {
+    border-color: rgba(245,158,11,0.35);
+    background: var(--amber-dim);
+  }
+
+  .slot-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    transition: color 0.35s;
+    line-height: 1;
+  }
+
+  .slot-card.free     .slot-num { color: var(--green); }
+  .slot-card.occupied .slot-num { color: var(--red); }
+  .slot-card.reserved .slot-num { color: var(--amber); }
+
+  .slot-badge {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 2px 10px;
+    border-radius: 20px;
+  }
+
+  .slot-card.free     .slot-badge { background: rgba(34,197,94,0.15);  color: var(--green); }
+  .slot-card.occupied .slot-badge { background: rgba(239,68,68,0.15);  color: var(--red); }
+  .slot-card.reserved .slot-badge { background: rgba(245,158,11,0.15); color: var(--amber); }
+
+  .slot-res-info {
+    font-size: 9px;
+    color: var(--amber);
+    font-weight: 600;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .slot-arrow {
+    font-size: 14px;
+    margin-top: 2px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .slot-card.free .slot-arrow {
+    opacity: 1;
+    color: var(--green);
+    animation: bounce 1.2s ease-in-out infinite;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    flex-shrink: 0;
+    padding: 8px 28px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+  }
+
+  .latest-event {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .latest-event b { color: var(--text); }
+
+  .footer-brand {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  /* Connection lost banner */
+  .conn-lost {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: var(--red);
+    color: white;
+    text-align: center;
+    padding: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    z-index: 999;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes blink  { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
+  @keyframes bounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(5px);} }
+  @keyframes flash  { from{opacity:0;transform:scale(0.96);} to{opacity:1;transform:scale(1);} }
+  .flash { animation: flash 0.25s ease; }
+</style>
+</head>
+<body>
+
+<div class="conn-lost" id="connLost">⚠ CONNECTION LOST — RECONNECTING...</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">P</div>
+    <div>
+      <div class="brand-text">PARKASENSE</div>
+      <div class="brand-sub">Exact Colleges of Asia · Entrance Display</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="live-pill"><div class="live-dot"></div>LIVE</div>
+    <div class="clock" id="clock">--:--:--</div>
+  </div>
+</div>
+
+<!-- BANNER -->
+<div class="banner state-ok" id="banner">
+  <div class="banner-glow"></div>
+  <div>
+    <div class="banner-label">Available Parking Slots</div>
+    <div class="banner-count ok" id="bannerCount">6</div>
+    <div class="banner-msg ok" id="bannerMsg">SLOTS AVAILABLE</div>
+    <div class="banner-hint" id="bannerHint">Proceed to any <b>green</b> slot below</div>
+  </div>
+</div>
+
+<!-- SLOTS -->
+<div class="slots-section">
+  <div class="section-label">// Real-time Slot Status</div>
+
+  <div class="slot-grid">
+    <!-- Top row -->
+    <div class="slot-card free" id="card-S1">
+      <div class="slot-num">S1</div>
+      <div class="slot-badge">Available</div>
+      <div class="slot-res-info" id="rinf-S1"></div>
+      <div class="slot-arrow">↓</div>
+    </div>
+    <div class="slot-card free" id="card-S2">
+      <div class="slot-num">S2</div>
+      <div class="slot-badge">Available</div>
+      <div class="slot-res-info" id="rinf-S2"></div>
+      <div class="slot-arrow">↓</div>
+    </div>
+    <div class="slot-card free" id="card-S3">
+      <div class="slot-num">S3</div>
+      <div class="slot-badge">Available</div>
+      <div class="slot-res-info" id="rinf-S3"></div>
+      <div class="slot-arrow">↓</div>
+    </div>
+
+    <!-- Road -->
+    <div class="road-divider">
+      <div class="road-line"></div>
+      <div class="road-text">← Entrance / Exit Lane →</div>
+      <div class="road-line"></div>
+    </div>
+
+    <!-- Bottom row -->
+    <div class="slot-card free" id="card-S4">
+      <div class="slot-num">S4</div>
+      <div class="slot-badge">Available</div>
+      <div class="slot-res-info" id="rinf-S4"></div>
+      <div class="slot-arrow">↑</div>
+    </div>
+    <div class="slot-card free" id="card-S5">
+      <div class="slot-num">S5</div>
+      <div class="slot-badge">Available</div>
+      <div class="slot-res-info" id="rinf-S5"></div>
+      <div class="slot-arrow">↑</div>
+    </div>
+    <div class="slot-card free" id="card-S6">
+      <div class="slot-num">S6</div>
+      <div class="slot-badge">Available</div>
+      <div class="slot-res-info" id="rinf-S6"></div>
+      <div class="slot-arrow">↑</div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="latest-event" id="latestEvent">Waiting for vehicle activity...</div>
+  <div class="footer-brand">ECA · ParkaSense v2.0</div>
+</div>
+
+<script>
+  // Clock
+  setInterval(() => {
+    document.getElementById('clock').textContent =
+      new Date().toLocaleTimeString('en-PH', { hour12: false })
+  }, 1000)
+
+  const socket = io('https://arkasense.onrender.com')
+
+  socket.on('connect',    () => { document.getElementById('connLost').style.display = 'none' })
+  socket.on('disconnect', () => { document.getElementById('connLost').style.display = 'block' })
+
+  socket.on('slot-update', ({ slots, reservations, available, log }) => {
+    const res = reservations || {}
+    const total = Object.keys(slots).length
+
+    // Slots
+    Object.entries(slots).forEach(([name, status]) => {
+      const card  = document.getElementById(`card-${name}`)
+      const badge = card.querySelector('.slot-badge')
+      const rinf  = document.getElementById(`rinf-${name}`)
+      const arrow = card.querySelector('.slot-arrow')
+      const wasClass = card.className
+
+      const isBottom = ['S4','S5','S6'].includes(name)
+      arrow.textContent = isBottom ? '↑' : '↓'
+
+      if (status === 'occupied') {
+        card.className = 'slot-card occupied'
+        badge.textContent = 'Occupied'
+        rinf.textContent = ''
+      } else if (res[name]) {
+        card.className = 'slot-card reserved'
+        badge.textContent = 'Reserved'
+        rinf.textContent = '🔶 ' + res[name].name.split(' ')[0]
+      } else {
+        card.className = 'slot-card free'
+        badge.textContent = 'Available'
+        rinf.textContent = ''
+      }
+
+      if (wasClass !== card.className) {
+        card.classList.add('flash')
+        setTimeout(() => card.classList.remove('flash'), 250)
+      }
+    })
+
+    // Banner
+    const banner = document.getElementById('banner')
+    const count  = document.getElementById('bannerCount')
+    const msg    = document.getElementById('bannerMsg')
+    const hint   = document.getElementById('bannerHint')
+
+    count.textContent = available
+
+    if (available === 0) {
+      banner.className = 'banner state-full'
+      count.className  = 'banner-count full'
+      msg.className    = 'banner-msg full'
+      msg.textContent  = 'PARKING FULL'
+      hint.innerHTML   = 'No slots available. Please find another parking area.'
+    } else if (available <= 2) {
+      banner.className = 'banner state-low'
+      count.className  = 'banner-count low'
+      msg.className    = 'banner-msg low'
+      msg.textContent  = available === 1 ? 'SLOT AVAILABLE' : 'SLOTS AVAILABLE'
+      const first = Object.entries(slots).find(([n, s]) => s === 'free' && !res[n])?.[0]
+      hint.innerHTML = first
+        ? `⚠ Almost full! Proceed to Slot <b>${first}</b>`
+        : 'Slots may be reserved — check availability below'
+    } else {
+      banner.className = 'banner state-ok'
+      count.className  = 'banner-count ok'
+      msg.className    = 'banner-msg ok'
+      msg.textContent  = 'SLOTS AVAILABLE'
+      const first = Object.entries(slots).find(([n, s]) => s === 'free' && !res[n])?.[0]
+      hint.innerHTML = first
+        ? `Proceed to any <b>green</b> slot · Nearest: <b>Slot ${first}</b>`
+        : 'Check slot status below'
+    }
+
+    // Latest event
+    if (log && log.length > 0) {
+      const e = log[0]
+      const action = e.status === 'occupied' ? 'Vehicle entered' : 'Vehicle left'
+      document.getElementById('latestEvent').innerHTML =
+        `<b>${e.timestamp}</b> — Slot ${e.slot}: ${action}`
+    }
+  })
+</script>
+</body>
+</html>
