@@ -11,3 +11,8 @@ then copy the 2 front end file to the empty website
 cd vision
 python detectslots.py
 /allows the yolov2 to run
+
+3
+editing the camera settings
+cd vision
+python calibrate.py
