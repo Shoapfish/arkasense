@@ -4,7 +4,7 @@ import time
 import json
 from ultralytics import YOLO
 
-BACKEND_URL     = "http://localhost:3000/update-slots"
+BACKEND_URL = "https://arkasense.onrender.com/update-slots"
 CAMERA_INDEX    = 0
 UPDATE_INTERVAL = 1
 

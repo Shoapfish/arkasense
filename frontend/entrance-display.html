@@ -460,7 +460,7 @@
       new Date().toLocaleTimeString('en-PH', { hour12: false })
   }, 1000)
 
-  const socket = io('http://localhost:3000')
+  const socket = io('https://arkasense.onrender.com')
 
   socket.on('connect',    () => { document.getElementById('connLost').style.display = 'none' })
   socket.on('disconnect', () => { document.getElementById('connLost').style.display = 'block' })
