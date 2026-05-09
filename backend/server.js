@@ -243,6 +243,6 @@ io.on('connection', (socket) => {
 // ─────────────────────────────────────────
 // Start
 // ─────────────────────────────────────────
-server.listen(3000, () => {
+server.listen(process.env.PORT || 3000, () => {
   console.log('ParkaSense backend running on http://localhost:3000')
 })
