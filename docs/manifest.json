@@ -1,26 +1,17 @@
 {
-  "name": "ParkaSense ECA",
-  "short_name": "ParkaSense",
-  "description": "Smart Parking Slot Reservation for Exact Colleges of Asia",
-  "start_url": "/arkasense/reservation-app.html",
-  "scope": "/arkasense/",
-  "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#ffffff",
-  "theme_color": "#1D4ED8",
+  "dir": "auto",
+  "display": "standalone",
+  "name": "Exact Smart Parking System",
+  "orientation": "portrait",
+  "scope": "/arkasense/",
+  "short_name": "ParkaSense",
+  "start_url": "/arkasense/reservation-app.html",
+  "theme_color": "#1d4ed8",
+  "id": "parkasense",
+  "description": "Smart Parking Slot Reservation for Exact Colleges of Asia",
   "lang": "en",
-  "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
+  "display_override": [
+    "window-controls-overlay"
   ]
 }
