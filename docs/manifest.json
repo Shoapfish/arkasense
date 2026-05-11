@@ -5,9 +5,10 @@
   "start_url": "/arkasense/reservation-app.html",
   "scope": "/arkasense/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
-  "background_color": "#ffffff",
-  "theme_color": "#1D4ED8",
+  "background_color": "#0B0F1A",
+  "theme_color": "#0B0F1A",
   "lang": "en",
   "icons": [
     {
