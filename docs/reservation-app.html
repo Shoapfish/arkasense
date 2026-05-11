@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1D4ED8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ParkaSense — Reserve a Spot</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
@@ -737,7 +739,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const BACKEND = 'http://localhost:3000'
+  const BACKEND = 'https://arkasense.onrender.com'
   const socket  = io(BACKEND)
 
   let selectedSlot = null
@@ -977,6 +979,11 @@
     t.textContent = msg
     t.className = `toast ${type} show`
     setTimeout(() => t.className = 'toast', 3000)
+  }
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
   }
 </script>
 </body>
