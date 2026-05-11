@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.shoapfish.twa",
+        "sha256_cert_fingerprints": ["DD:BC:34:DB:5D:F4:C2:14:FD:42:A6:FA:4D:A4:EF:A5:F3:C1:7F:D5:B9:08:D5:29:96:01:03:CC:6F:EC:26:F7"]
+      }
+    }]
