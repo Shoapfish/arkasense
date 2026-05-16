@@ -31,3 +31,7 @@ https://shoapfish.github.io/arkasense/entrance-display.html
 web/appp
 
 https://drive.google.com/drive/folders/1gzfZY33b_Qv1bQsj_3f5kTNT9OWTOXDm?usp=drive_link
+
+6
+running the testcam
+python diagnose_camera.py
