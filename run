@@ -1,4 +1,4 @@
-open 2 terminals
+open this::::
 1
  cd backend
  node server.js
