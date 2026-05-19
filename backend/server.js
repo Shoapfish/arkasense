@@ -154,7 +154,7 @@ app.post('/reserve', (req, res) => {
     phone: phone || '',
     reservedAt: new Date(now).toLocaleString('en-PH'),
     expiresAt: now + durationMs,
-    expiresAtDisplay: new Date(now + durationMs).toLocaleString('en-PH'),
+    expiresAtDisplay: new Date(now + durationMs).toISOString(),
     code,
     duration: Math.min(Math.max(duration, 5), 600)
   }
@@ -170,7 +170,7 @@ app.post('/reserve', (req, res) => {
   console.log(`Reservation: ${slot} → ${name} (${plate}) for ${duration}min [${code}]`)
   broadcastState()
 
-  res.json({ ok: true, code, slot, expiresAt: reservations[slot].expiresAtDisplay })
+  res.json({ ok: true, code, slot, expiresAt: new Date(now + durationMs).toISOString() })
 })
 
 // ─────────────────────────────────────────
@@ -243,6 +243,6 @@ io.on('connection', (socket) => {
 // ─────────────────────────────────────────
 // Start
 // ─────────────────────────────────────────
-server.listen(process.env.PORT || 3000, () => {
+server.listen(3000, () => {
   console.log('ParkaSense backend running on http://localhost:3000')
 })
