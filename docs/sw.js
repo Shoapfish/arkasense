@@ -1,4 +1,4 @@
-const CACHE_NAME = 'parkasense-v1'
+const CACHE_NAME = 'parkasense-v2'
 const ASSETS = [
   '/arkasense/reservation-app.html',
   '/arkasense/manifest.json'
