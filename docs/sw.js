@@ -1,4 +1,4 @@
-const CACHE_NAME = 'parkasense-v2'
+const CACHE_NAME = 'parkasense-v3'
 const ASSETS = [
   '/arkasense/reservation-app.html',
   '/arkasense/manifest.json'
@@ -21,7 +21,15 @@ self.addEventListener('activate', event => {
 })
 
 self.addEventListener('fetch', event => {
+  // Always fetch fresh from network, fall back to cache only if offline
   event.respondWith(
-    caches.match(event.request).then(r => r || fetch(event.request))
+    fetch(event.request)
+      .then(response => {
+        // Update cache with fresh response
+        const clone = response.clone()
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone))
+        return response
+      })
+      .catch(() => caches.match(event.request))
   )
 })
