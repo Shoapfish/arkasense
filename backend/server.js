@@ -2,6 +2,7 @@ const express    = require('express')
 const http       = require('http')
 const { Server } = require('socket.io')
 const cors       = require('cors')
+const crypto     = require('crypto') // Built-in node module for safe token generation
 
 const app    = express()
 const server = http.createServer(app)
@@ -11,6 +12,25 @@ const io     = new Server(server, {
 
 app.use(cors())
 app.use(express.json())
+
+// ─────────────────────────────────────────
+// Admin Configuration & Auth State
+// ─────────────────────────────────────────
+// Fallback password is 'admin123' if ADMIN_PASSWORD isn't set in your Render environment variables
+const ADMIN_USERNAME = process.env.ADMIN_USER || 'admin'
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123' 
+
+// In-memory store for active session tokens
+const activeTokens = new Set()
+
+// Middleware to protect admin routes
+function requireAdmin(req, res, next) {
+  const token = req.headers['x-admin-token']
+  if (!token || !activeTokens.has(token)) {
+    return res.status(401).json({ ok: false, error: 'Unauthorized administrative access' })
+  }
+  next()
+}
 
 // ─────────────────────────────────────────
 // In-memory state
@@ -74,6 +94,98 @@ setInterval(() => {
 }, 30000)
 
 // ─────────────────────────────────────────
+// Admin Authentication Endpoints
+// ─────────────────────────────────────────
+
+// POST /admin/login
+app.post('/admin/login', (req, res) => {
+  const { username, password } = req.body
+
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    // Generate a secure, unique dynamic token for this session
+    const token = crypto.randomBytes(24).toString('hex')
+    activeTokens.add(token)
+    return res.json({ ok: true, token })
+  }
+
+  res.status(401).json({ ok: false, error: 'Invalid username or password' })
+})
+
+// GET /admin/verify
+app.get('/admin/verify', (req, res) => {
+  const token = req.headers['x-admin-token']
+  if (token && activeTokens.has(token)) {
+    return res.json({ ok: true })
+  }
+  res.json({ ok: false })
+})
+
+// POST /admin/logout
+app.post('/admin/logout', (req, res) => {
+  const token = req.headers['x-admin-token']
+  if (token) {
+    activeTokens.delete(token)
+  }
+  res.json({ ok: true })
+})
+
+// ─────────────────────────────────────────
+// Admin Actions Endpoints
+// ─────────────────────────────────────────
+
+// POST /admin/reservation/accept
+app.post('/admin/reservation/accept', requireAdmin, (req, res) => {
+  const { slot } = req.body
+  if (!reservations[slot]) {
+    return res.status(404).json({ ok: false, error: 'No reservation active for this slot' })
+  }
+  
+  // Note: Your frontend keeps tracking confirmation status through acceptedSlots local state
+  console.log(`Admin approved reservation on Slot ${slot}`)
+  res.json({ ok: true })
+})
+
+// POST /admin/reservation/reject
+app.post('/admin/reservation/reject', requireAdmin, (req, res) => {
+  const { slot } = req.body
+  if (!reservations[slot]) {
+    return res.status(404).json({ ok: false, error: 'No reservation found' })
+  }
+
+  const name = reservations[slot].name
+  reservationLog.unshift({
+    slot,
+    name,
+    action: 'cancelled', // Triggers the custom 'resout' red border accent in UI logs
+    timestamp: new Date().toLocaleString('en-PH')
+  })
+
+  delete reservations[slot]
+  broadcastState()
+  res.json({ ok: true })
+})
+
+// POST /admin/reservation/cancel (Handles dashboard layout Force-Cancel button)
+app.post('/admin/reservation/cancel', requireAdmin, (req, res) => {
+  const { slot } = req.body
+  if (!reservations[slot]) {
+    return res.status(404).json({ ok: false, error: 'No reservation to cancel' })
+  }
+
+  const name = reservations[slot].name
+  reservationLog.unshift({
+    slot, 
+    name, 
+    action: 'admin-cancelled',
+    timestamp: new Date().toLocaleString('en-PH')
+  })
+
+  delete reservations[slot]
+  broadcastState()
+  res.json({ ok: true })
+})
+
+// ─────────────────────────────────────────
 // POST /update-slots  (from Python vision)
 // ─────────────────────────────────────────
 app.post('/update-slots', (req, res) => {
@@ -123,7 +235,6 @@ app.get('/status', (req, res) => {
 
 // ─────────────────────────────────────────
 // POST /reserve  (user reserves a slot)
-// Body: { slot, name, plate, phone, duration } duration in minutes
 // ─────────────────────────────────────────
 app.post('/reserve', (req, res) => {
   const { slot, name, plate, phone, duration = 30 } = req.body
@@ -174,8 +285,7 @@ app.post('/reserve', (req, res) => {
 })
 
 // ─────────────────────────────────────────
-// DELETE /reserve/:slot  (cancel reservation)
-// Body: { code }  — must match
+// DELETE /reserve/:slot  (user cancel via code)
 // ─────────────────────────────────────────
 app.delete('/reserve/:slot', (req, res) => {
   const { slot } = req.params
@@ -204,9 +314,9 @@ app.delete('/reserve/:slot', (req, res) => {
 })
 
 // ─────────────────────────────────────────
-// Admin: DELETE /admin/reserve/:slot (no code needed)
+// Legacy Admin Endpoint Compatibility
 // ─────────────────────────────────────────
-app.delete('/admin/reserve/:slot', (req, res) => {
+app.delete('/admin/reserve/:slot', requireAdmin, (req, res) => {
   const { slot } = req.params
   if (!reservations[slot]) {
     return res.status(404).json({ ok: false, error: 'No reservation' })
