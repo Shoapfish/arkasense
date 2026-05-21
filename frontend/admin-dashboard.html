@@ -3,756 +3,817 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ParkaSense — Admin</title>
+<title>ParkaSense — Admin Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --ink:      #0B0F1A;
-    --ink2:     #1E2535;
-    --slate:    #3D4A63;
-    --muted:    #7B8BA4;
-    --line:     #E2E8F0;
-    --surface:  #F7F9FC;
-    --white:    #FFFFFF;
-    --blue:     #2563EB;
-    --blue-dim: #EFF6FF;
-    --blue-mid: #BFDBFE;
-    --green:    #16A34A;
-    --green-dim:#F0FDF4;
-    --red:      #DC2626;
-    --red-dim:  #FEF2F2;
-    --amber:    #D97706;
-    --amber-dim:#FFFBEB;
-    --radius:   14px;
+    --bg:       #0C1120;
+    --surface:  #131929;
+    --card:     #1A2235;
+    --border:   #252F45;
+    --text:     #E8EDF5;
+    --muted:    #5A6B8A;
+    --dim:      #3A4A65;
+    --blue:     #3B82F6;
+    --blue-dim: rgba(59,130,246,0.12);
+    --green:    #22C55E;
+    --green-dim:rgba(34,197,94,0.12);
+    --red:      #EF4444;
+    --red-dim:  rgba(239,68,68,0.12);
+    --amber:    #F59E0B;
+    --amber-dim:rgba(245,158,11,0.12);
+    --radius:   12px;
   }
 
   * { margin:0; padding:0; box-sizing:border-box; }
 
   body {
-    background: var(--surface);
-    color: var(--ink);
+    background: var(--bg);
+    color: var(--text);
     font-family: 'DM Sans', sans-serif;
-    min-height: 100vh;
+    height: 100vh;
+    display: grid;
+    grid-template-rows: 52px 1fr;
+    overflow: hidden;
   }
 
-  /* ── LOGIN SCREEN ── */
-  #loginScreen {
-    position: fixed; inset: 0;
+  /* ── TOPBAR ── */
+  .topbar {
     background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .brand-mark {
+    width: 30px; height: 30px;
+    background: var(--blue);
+    border-radius: 8px;
     display: flex; align-items: center; justify-content: center;
-    z-index: 1000; padding: 24px;
-  }
-  #loginScreen.hidden { display: none; }
-
-  .login-box {
-    width: 100%; max-width: 380px;
-    background: var(--white);
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    padding: 36px 32px;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.08);
-    animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 14px;
+    color: white;
   }
 
-  .login-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
-
-  .login-mark {
-    width: 44px; height: 44px; background: var(--blue);
-    border-radius: 12px; display: flex; align-items: center; justify-content: center;
-    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 20px; color: white;
+  .brand-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    color: var(--text);
   }
 
-  .login-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 20px; color: var(--ink); }
-  .login-sub   { font-size: 11px; color: var(--muted); margin-top: 2px; letter-spacing: 1px; text-transform: uppercase; }
-  .login-heading { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
-  .login-hint    { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
-
-  .login-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-
-  .login-field label {
-    font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
-    text-transform: uppercase; color: var(--slate);
+  .brand-tag {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: var(--blue-dim);
+    color: var(--blue);
+    padding: 2px 8px;
+    border-radius: 20px;
   }
 
-  .login-field input {
-    height: 46px; padding: 0 14px;
-    background: var(--surface);
-    border: 1.5px solid var(--line);
-    border-radius: 10px; font-size: 14px;
-    font-family: 'DM Sans', sans-serif; color: var(--ink);
-    outline: none; transition: border 0.2s, box-shadow 0.2s;
-    width: 100%;
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
   }
 
-  .login-field input:focus {
-    border-color: var(--blue);
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
-    background: var(--white);
+  .conn-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
   }
 
-  .btn-login {
-    width: 100%; height: 46px; background: var(--blue); color: white;
-    border: none; border-radius: 11px;
-    font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
-    cursor: pointer; margin-top: 6px; transition: all 0.2s;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-  }
-  .btn-login:hover { background: #1D4ED8; box-shadow: 0 6px 20px rgba(37,99,235,0.2); }
-  .btn-login:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
-
-  .login-error {
-    display: none; margin-top: 12px; padding: 10px 14px;
-    background: var(--red-dim); border: 1px solid #FECACA;
-    border-radius: 9px; font-size: 12px; font-weight: 600;
-    color: var(--red); text-align: center;
-  }
-  .login-error.show { display: block; }
-
-  /* ── HEADER ── */
-  header {
-    background: var(--ink); padding: 0 24px; height: 60px;
-    display: flex; align-items: center; justify-content: space-between;
-    position: sticky; top: 0; z-index: 100;
+  .conn-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 1.4s infinite;
   }
 
-  .logo { display: flex; align-items: center; gap: 10px; }
-
-  .logo-mark {
-    width: 34px; height: 34px; background: var(--blue);
-    border-radius: 9px; display: flex; align-items: center; justify-content: center;
-    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 17px; color: white;
-  }
-
-  .logo-text { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 16px; color: white; }
-  .logo-sub  { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 1px; letter-spacing: 1.5px; text-transform: uppercase; }
-
-  .header-tag {
-    font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
-    background: var(--blue-dim); color: var(--blue);
-    padding: 3px 10px; border-radius: 20px;
-  }
-
-  .header-right { display: flex; align-items: center; gap: 12px; }
-
-  .admin-pill {
-    display: flex; align-items: center; gap: 6px;
-    font-size: 11px; font-weight: 600; color: var(--green);
-    background: var(--green-dim); border: 1px solid #BBF7D0;
-    padding: 4px 10px; border-radius: 20px;
-  }
-
-  .conn-pill { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.5); }
-  .conn-dot  { width: 7px; height: 7px; border-radius: 50%; background: #4ADE80; animation: blink 1.4s infinite; }
   .conn-dot.off { background: var(--red); animation: none; }
 
-  .clock { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.5); font-variant-numeric: tabular-nums; }
-
-  .btn-logout {
-    height: 30px; padding: 0 12px;
-    background: var(--red-dim); border: 1px solid #FECACA;
-    color: var(--red); border-radius: 8px;
-    font-size: 11px; font-weight: 700; cursor: pointer;
+  .clock {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
   }
-  .btn-logout:hover { background: #FECACA; }
-
-  /* ── AVAIL BAR ── */
-  .avail-bar {
-    background: var(--blue); color: white;
-    padding: 10px 24px; display: flex; align-items: center;
-    justify-content: center; gap: 8px; font-size: 13px;
-    font-weight: 600; transition: background 0.4s;
-  }
-  .avail-bar.full { background: var(--red); }
-  .avail-bar.low  { background: var(--amber); }
 
   /* ── MAIN LAYOUT ── */
   .main {
-    padding: 20px 24px 32px;
-    display: flex; flex-direction: column; gap: 16px;
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    grid-template-rows: auto 1fr;
+    gap: 12px;
+    padding: 12px 16px 14px;
+    overflow: hidden;
   }
 
-  /* ── STAT CARDS ── */
+  /* ── STAT ROW ── */
   .stats-row {
+    grid-column: 1 / -1;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 10px;
   }
 
-  @media (max-width: 900px) {
-    .stats-row { grid-template-columns: repeat(3, 1fr); }
-  }
-
   .stat-card {
-    background: var(--white);
-    border: 1px solid var(--line);
+    background: var(--card);
+    border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 16px;
-    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
 
-  .stat-label { font-size: 10px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
-  .stat-value { font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 800; line-height: 1; }
+  .stat-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 30px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
   .stat-value.blue   { color: var(--blue); }
+  .stat-value.green  { color: var(--green); }
   .stat-value.red    { color: var(--red); }
   .stat-value.amber  { color: var(--amber); }
-  .stat-value.green  { color: var(--green); }
-  .stat-value.muted  { color: var(--slate); }
+  .stat-value.muted  { color: var(--dim); }
 
-  .stat-icon { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .stat-icon {
+    width: 38px; height: 38px;
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
   .stat-icon.blue   { background: var(--blue-dim); }
+  .stat-icon.green  { background: var(--green-dim); }
   .stat-icon.red    { background: var(--red-dim); }
   .stat-icon.amber  { background: var(--amber-dim); }
-  .stat-icon.green  { background: var(--green-dim); }
 
-  /* ── TWO-COL LAYOUT ── */
-  .two-col { display: grid; grid-template-columns: 1fr 320px; gap: 16px; }
-  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+  /* ── LEFT PANEL ── */
+  .left-panel {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    gap: 12px;
+    overflow: hidden;
+  }
 
-  /* ── PANEL CARD ── */
-  .panel-card {
-    background: var(--white);
-    border: 1px solid var(--line);
+  /* ── MAP PANEL ── */
+  .map-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 20px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
-  .panel-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
-  .panel-sub   { font-size: 11px; color: var(--muted); margin-bottom: 14px; }
-
-  /* ── SLOT GRID ── */
-  .slot-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
-
-  .road-row {
-    grid-column: 1/-1; display: flex; align-items: center; gap: 10px;
-    padding: 7px 14px; background: var(--surface); border-radius: 8px;
-    border: 1px dashed #CBD5E1;
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
   }
-  .road-dash { flex:1; height:2px; background: repeating-linear-gradient(90deg,var(--amber) 0,var(--amber) 10px,transparent 10px,transparent 18px); }
-  .road-text { font-size:9px; font-weight:700; letter-spacing:2.5px; color:var(--amber); text-transform:uppercase; white-space:nowrap; }
+
+  .panel-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .panel-sub {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .live-dot-sm {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 1.4s infinite;
+    margin-right: 5px;
+  }
+
+  .parking-map {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .map-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .road-strip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 12px;
+    background: rgba(245,158,11,0.05);
+    border: 1px dashed rgba(245,158,11,0.2);
+    border-radius: 8px;
+  }
+
+  .road-dash {
+    flex: 1;
+    height: 2px;
+    background: repeating-linear-gradient(90deg, var(--amber) 0, var(--amber) 10px, transparent 10px, transparent 18px);
+  }
+
+  .road-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--amber);
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
 
   .map-slot {
-    border-radius: 10px; padding: 12px 8px; text-align: center;
-    border: 1.5px solid var(--line); background: var(--white);
+    border-radius: 10px;
+    padding: 12px 8px;
+    text-align: center;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
     transition: all 0.3s ease;
+    cursor: default;
   }
-  .map-slot.free     { border-color: #BBF7D0; background: var(--green-dim); }
-  .map-slot.occupied { border-color: #FECACA; background: var(--red-dim); opacity: 0.8; }
-  .map-slot.reserved { border-color: #FDE68A; background: var(--amber-dim); }
 
-  .map-slot-name { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; margin-bottom:3px; }
+  .map-slot.free {
+    border-color: rgba(34,197,94,0.3);
+    background: var(--green-dim);
+  }
+
+  .map-slot.occupied {
+    border-color: rgba(239,68,68,0.3);
+    background: var(--red-dim);
+    opacity: 0.8;
+  }
+
+  .map-slot.reserved {
+    border-color: rgba(245,158,11,0.4);
+    background: var(--amber-dim);
+  }
+
+  .map-slot-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    margin-bottom: 3px;
+    transition: color 0.3s;
+  }
+
   .map-slot.free     .map-slot-name { color: var(--green); }
   .map-slot.occupied .map-slot-name { color: var(--red); }
   .map-slot.reserved .map-slot-name { color: var(--amber); }
 
-  .map-slot-label { font-size:8px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
+  .map-slot-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin: 0 auto 3px;
+    transition: background 0.3s;
+  }
+
+  .map-slot.free     .map-slot-dot { background: var(--green); }
+  .map-slot.occupied .map-slot-dot { background: var(--red); }
+  .map-slot.reserved .map-slot-dot { background: var(--amber); }
+
+  .map-slot-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: color 0.3s;
+  }
+
   .map-slot.free     .map-slot-label { color: var(--green); }
   .map-slot.occupied .map-slot-label { color: var(--red); }
   .map-slot.reserved .map-slot-label { color: var(--amber); }
 
-  .map-slot-res { font-size:9px; color:var(--amber); font-weight:600; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .map-slot-res {
+    font-size: 8px;
+    color: var(--amber);
+    font-weight: 600;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-  /* ── RESERVATION LIST ── */
-  .res-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; max-height: 280px; overflow-y: auto; }
+  /* ── RESERVATIONS PANEL ── */
+  .res-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    max-height: 200px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .res-list {
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px;
+    padding-right: 2px;
+  }
+
   .res-list::-webkit-scrollbar { width: 3px; }
-  .res-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
+  .res-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
   .res-item {
-    background: var(--amber-dim); border: 1px solid #FDE68A;
-    border-radius: 10px; padding: 10px 12px;
+    background: var(--amber-dim);
+    border: 1px solid rgba(245,158,11,0.2);
+    border-radius: 9px;
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    animation: slideIn 0.2s ease;
   }
 
-  .res-item-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-  .res-item-slot { font-family:'Syne',sans-serif; font-size:14px; font-weight:800; color:var(--amber); }
-  .res-status-badge {
-    font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
-    padding:2px 8px; border-radius:20px;
+  .res-item-info { flex: 1; min-width: 0; }
+  .res-item-slot {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--amber);
   }
-  .res-status-badge.pending  { background:#FDE68A; color:var(--amber); }
-  .res-status-badge.accepted { background:#BBF7D0; color:var(--green); }
 
-  .res-item-name  { font-size:13px; font-weight:600; color:var(--ink); }
-  .res-item-plate { font-size:11px; color:var(--muted); }
-  .res-item-expire { font-size:10px; color:var(--amber); font-weight:500; margin-top:4px; }
-
-  .res-actions { display:flex; gap:6px; margin-top:8px; }
-
-  .btn-accept {
-    flex:1; height:32px; background:var(--green-dim); border:1px solid #BBF7D0;
-    color:var(--green); border-radius:8px; font-size:11px; font-weight:700;
-    cursor:pointer; transition:background 0.2s;
+  .res-item-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .btn-accept:hover { background:#BBF7D0; }
-  .btn-accept:disabled { opacity:0.5; cursor:default; }
 
-  .btn-reject {
-    flex:1; height:32px; background:var(--red-dim); border:1px solid #FECACA;
-    color:var(--red); border-radius:8px; font-size:11px; font-weight:700;
-    cursor:pointer; transition:background 0.2s;
+  .res-item-plate {
+    font-size: 10px;
+    color: var(--muted);
+    font-weight: 500;
   }
-  .btn-reject:hover { background:#FECACA; }
 
-  .btn-force-cancel {
-    flex:1; height:32px; background:var(--surface); border:1px solid var(--line);
-    color:var(--slate); border-radius:8px; font-size:11px; font-weight:700;
-    cursor:pointer; transition:background 0.2s;
+  .res-item-expire {
+    font-size: 10px;
+    color: var(--amber);
+    font-weight: 500;
+    white-space: nowrap;
+    text-align: right;
   }
-  .btn-force-cancel:hover { background:var(--line); }
 
-  .res-empty { text-align:center; padding:20px; font-size:12px; color:var(--muted); }
+  .btn-cancel-res {
+    background: rgba(239,68,68,0.15);
+    border: 1px solid rgba(239,68,68,0.2);
+    color: var(--red);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
 
-  /* ── LOG ── */
-  .log-tabs { display:flex; gap:4px; margin-bottom:12px; }
+  .btn-cancel-res:hover { background: rgba(239,68,68,0.25); }
+
+  .res-empty {
+    text-align: center;
+    padding: 12px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* ── LOG PANEL ── */
+  .log-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .log-tabs {
+    display: flex;
+    gap: 4px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+
   .log-tab {
-    padding:5px 12px; border-radius:20px; font-size:11px; font-weight:600;
-    cursor:pointer; border:1px solid var(--line); background:var(--surface);
-    color:var(--muted); transition:all 0.2s;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.2s;
   }
-  .log-tab.active { background:var(--blue-dim); border-color:var(--blue-mid); color:var(--blue); }
 
-  .log-list { display:flex; flex-direction:column; gap:6px; max-height:400px; overflow-y:auto; }
-  .log-list::-webkit-scrollbar { width:3px; }
-  .log-list::-webkit-scrollbar-thumb { background:var(--line); border-radius:2px; }
+  .log-tab.active {
+    background: var(--blue-dim);
+    border-color: rgba(59,130,246,0.2);
+    color: var(--blue);
+  }
+
+  .log-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding-right: 2px;
+  }
+
+  .log-list::-webkit-scrollbar { width: 3px; }
+  .log-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
   .log-item {
-    border-radius:8px; padding:8px 12px;
-    border-left:3px solid var(--line); background:var(--surface);
-    animation:slideIn 0.2s ease;
-  }
-  .log-item.enter  { border-left-color:var(--red);   background:var(--red-dim); }
-  .log-item.exit   { border-left-color:var(--blue);  background:var(--blue-dim); }
-  .log-item.resin  { border-left-color:var(--amber); background:var(--amber-dim); }
-  .log-item.resout { border-left-color:var(--green); background:var(--green-dim); }
-
-  .log-time { font-size:10px; color:var(--muted); font-weight:500; margin-bottom:1px; }
-  .log-msg  { font-size:12px; font-weight:700; }
-  .log-item.enter  .log-msg { color:var(--red); }
-  .log-item.exit   .log-msg { color:var(--blue); }
-  .log-item.resin  .log-msg { color:var(--amber); }
-  .log-item.resout .log-msg { color:var(--green); }
-  .log-slot { font-size:10px; color:var(--muted); margin-top:1px; }
-  .log-empty { text-align:center; padding:20px; font-size:12px; color:var(--muted); }
-
-  /* ── MODAL ── */
-  .modal-overlay {
-    display:none; position:fixed; inset:0;
-    background:rgba(0,0,0,0.4); z-index:500;
-    align-items:center; justify-content:center;
-    backdrop-filter:blur(4px); padding:20px;
-  }
-  .modal-overlay.show { display:flex; }
-
-  .modal {
-    background:var(--white); border:1px solid var(--line);
-    border-radius:18px; padding:28px;
-    width:100%; max-width:360px;
-    box-shadow:0 8px 40px rgba(0,0,0,0.12);
-    animation:popIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    border-radius: 8px;
+    padding: 7px 10px;
+    border-left: 2px solid var(--border);
+    background: var(--surface);
+    animation: slideIn 0.2s ease;
   }
 
-  .modal-icon  { font-size:36px; text-align:center; margin-bottom:12px; }
-  .modal-title { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; text-align:center; margin-bottom:6px; color:var(--ink); }
-  .modal-sub   { font-size:12px; color:var(--muted); text-align:center; margin-bottom:16px; line-height:1.5; }
+  .log-item.enter  { border-left-color: var(--red);   background: var(--red-dim); }
+  .log-item.exit   { border-left-color: var(--blue);  background: var(--blue-dim); }
+  .log-item.resin  { border-left-color: var(--amber); background: var(--amber-dim); }
+  .log-item.resout { border-left-color: var(--green); background: var(--green-dim); }
 
-  .modal-info  { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:18px; }
-  .modal-row   { display:flex; justify-content:space-between; padding:5px 0; font-size:12px; border-bottom:1px solid var(--line); }
-  .modal-row:last-child { border-bottom:none; }
-  .modal-row-key { color:var(--muted); }
-  .modal-row-val { font-weight:700; color:var(--ink); }
+  .log-time { font-size: 9px; color: var(--muted); font-weight: 500; margin-bottom: 1px; }
+  .log-msg  { font-size: 11px; font-weight: 700; }
+  .log-item.enter  .log-msg { color: var(--red); }
+  .log-item.exit   .log-msg { color: var(--blue); }
+  .log-item.resin  .log-msg { color: var(--amber); }
+  .log-item.resout .log-msg { color: var(--green); }
+  .log-slot { font-size: 10px; color: var(--muted); margin-top: 1px; }
 
-  .modal-btns { display:flex; gap:8px; }
-  .modal-btn  { flex:1; height:42px; border:none; border-radius:10px; font-family:'Syne',sans-serif; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s; }
-  .modal-btn.go-back  { background:var(--surface); color:var(--slate); border:1px solid var(--line); }
-  .modal-btn.go-back:hover  { background:var(--line); }
-  .modal-btn.do-accept { background:var(--green); color:white; }
-  .modal-btn.do-accept:hover { background:#15803D; }
-  .modal-btn.do-reject { background:var(--red); color:white; }
-  .modal-btn.do-reject:hover { background:#B91C1C; }
-
-  /* ── TOAST ── */
-  #adminToast {
-    position:fixed; bottom:20px; left:50%;
-    transform:translateX(-50%) translateY(20px);
-    padding:10px 20px; border-radius:10px;
-    font-size:13px; font-weight:600; color:white;
-    opacity:0; transition:all 0.3s; z-index:999; white-space:nowrap;
+  .log-empty {
+    text-align: center;
+    padding: 20px;
+    font-size: 11px;
+    color: var(--muted);
   }
 
-  @keyframes blink   { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+  /* ── ANIMATIONS ── */
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
   @keyframes slideIn { from{opacity:0;transform:translateX(6px);} to{opacity:1;transform:translateX(0);} }
-  @keyframes flash   { from{opacity:0;transform:scale(0.97);} to{opacity:1;transform:scale(1);} }
-  @keyframes popIn   { from{opacity:0;transform:scale(0.92) translateY(12px);} to{opacity:1;transform:scale(1) translateY(0);} }
-  .flash { animation:flash 0.2s ease; }
+  @keyframes flash { 0%{opacity:0;transform:scale(0.97);} 100%{opacity:1;transform:scale(1);} }
+  .flash { animation: flash 0.2s ease; }
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="loginScreen">
-  <div class="login-box">
-    <div class="login-logo">
-      <div class="login-mark">P</div>
-      <div>
-        <div class="login-title">ParkaSense</div>
-        <div class="login-sub">Admin Access</div>
-      </div>
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">P</div>
+    <div class="brand-name">ParkaSense</div>
+    <div class="brand-tag">Admin Dashboard</div>
+  </div>
+  <div class="topbar-right">
+    <div class="conn-pill">
+      <div class="conn-dot" id="connDot"></div>
+      <span id="connText">Connected</span>
     </div>
-    <div class="login-heading">Sign in to Dashboard</div>
-    <div class="login-hint">Restricted to authorized administrators only.</div>
-    <div class="login-field">
-      <label>Username</label>
-      <input type="text" id="loginUser" placeholder="Enter username" autocomplete="username">
-    </div>
-    <div class="login-field">
-      <label>Password</label>
-      <input type="password" id="loginPass" placeholder="Enter password" autocomplete="current-password">
-    </div>
-    <button class="btn-login" id="btnLogin" onclick="doLogin()">🔑 Sign In</button>
-    <div class="login-error" id="loginError"></div>
+    <div class="clock" id="clock">--:--:--</div>
   </div>
 </div>
 
-<!-- HEADER -->
-<header>
-  <div class="logo">
-    <div class="logo-mark">P</div>
-    <div>
-      <div class="logo-text">ParkaSense</div>
-      <div class="logo-sub">ECA · Admin</div>
-    </div>
-  </div>
-  <div style="display:flex;align-items:center;gap:10px;">
-    <div class="header-tag">Admin Dashboard</div>
-    <div class="header-right">
-      <div class="admin-pill">🔐 <span id="adminName">Admin</span></div>
-      <div class="conn-pill"><div class="conn-dot" id="connDot"></div><span id="connText" style="color:rgba(255,255,255,0.5)">Connected</span></div>
-      <div class="clock" id="clock">--:--:--</div>
-      <button class="btn-logout" onclick="doLogout()">Sign Out</button>
-    </div>
-  </div>
-</header>
-
-<div class="avail-bar" id="availBar">✓ <span id="availText">6 slots available</span></div>
-
+<!-- MAIN -->
 <div class="main">
 
   <!-- STATS -->
   <div class="stats-row">
     <div class="stat-card">
-      <div><div class="stat-label">Available</div><div class="stat-value blue" id="statAvail">6</div></div>
+      <div>
+        <div class="stat-label">Available</div>
+        <div class="stat-value blue" id="statAvail">6</div>
+      </div>
       <div class="stat-icon blue">🟦</div>
     </div>
     <div class="stat-card">
-      <div><div class="stat-label">Occupied</div><div class="stat-value red" id="statOccupied">0</div></div>
+      <div>
+        <div class="stat-label">Occupied</div>
+        <div class="stat-value red" id="statOccupied">0</div>
+      </div>
       <div class="stat-icon red">🔴</div>
     </div>
     <div class="stat-card">
-      <div><div class="stat-label">Reserved</div><div class="stat-value amber" id="statReserved">0</div></div>
+      <div>
+        <div class="stat-label">Reserved</div>
+        <div class="stat-value amber" id="statReserved">0</div>
+      </div>
       <div class="stat-icon amber">🔶</div>
     </div>
     <div class="stat-card">
-      <div><div class="stat-label">Total Slots</div><div class="stat-value muted" id="statTotal">6</div></div>
+      <div>
+        <div class="stat-label">Total Slots</div>
+        <div class="stat-value muted" id="statTotal">6</div>
+      </div>
       <div class="stat-icon blue">🅿</div>
     </div>
     <div class="stat-card">
-      <div><div class="stat-label">Events Today</div><div class="stat-value green" id="statEvents">0</div></div>
+      <div>
+        <div class="stat-label">Events Today</div>
+        <div class="stat-value green" id="statEvents">0</div>
+      </div>
       <div class="stat-icon green">📋</div>
     </div>
   </div>
 
-  <!-- MAP + LOG -->
-  <div class="two-col">
+  <!-- LEFT: MAP + RESERVATIONS -->
+  <div class="left-panel">
 
-    <!-- LEFT -->
-    <div style="display:flex;flex-direction:column;gap:16px;">
-
-      <!-- MAP -->
-      <div class="panel-card">
-        <div class="panel-title">Live Parking View</div>
-        <div class="panel-sub">6-slot layout · 3 top · 3 bottom</div>
-        <div class="slot-grid">
-          <div class="map-slot free" id="map-S1"><div class="map-slot-name">S1</div><div class="map-slot-label">Free</div><div class="map-slot-res" id="mres-S1"></div></div>
-          <div class="map-slot free" id="map-S2"><div class="map-slot-name">S2</div><div class="map-slot-label">Free</div><div class="map-slot-res" id="mres-S2"></div></div>
-          <div class="map-slot free" id="map-S3"><div class="map-slot-name">S3</div><div class="map-slot-label">Free</div><div class="map-slot-res" id="mres-S3"></div></div>
-          <div class="road-row"><div class="road-dash"></div><div class="road-text">← Entrance / Exit →</div><div class="road-dash"></div></div>
-          <div class="map-slot free" id="map-S4"><div class="map-slot-name">S4</div><div class="map-slot-label">Free</div><div class="map-slot-res" id="mres-S4"></div></div>
-          <div class="map-slot free" id="map-S5"><div class="map-slot-name">S5</div><div class="map-slot-label">Free</div><div class="map-slot-res" id="mres-S5"></div></div>
-          <div class="map-slot free" id="map-S6"><div class="map-slot-name">S6</div><div class="map-slot-label">Free</div><div class="map-slot-res" id="mres-S6"></div></div>
+    <!-- MAP -->
+    <div class="map-panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title"><span class="live-dot-sm"></span>Live Parking View</div>
+          <div class="panel-sub">6-slot layout · 3 top · 3 bottom</div>
         </div>
       </div>
-
-      <!-- RESERVATIONS -->
-      <div class="panel-card">
-        <div class="panel-title">⏳ Active Reservations</div>
-        <div class="panel-sub">Accept, reject, or force-cancel any reservation</div>
-        <div class="res-list" id="resList">
-          <div class="res-empty">No active reservations</div>
+      <div class="parking-map">
+        <div class="map-row">
+          <div class="map-slot free" id="map-S1">
+            <div class="map-slot-dot"></div>
+            <div class="map-slot-name">S1</div>
+            <div class="map-slot-label">Free</div>
+            <div class="map-slot-res" id="mres-S1"></div>
+          </div>
+          <div class="map-slot free" id="map-S2">
+            <div class="map-slot-dot"></div>
+            <div class="map-slot-name">S2</div>
+            <div class="map-slot-label">Free</div>
+            <div class="map-slot-res" id="mres-S2"></div>
+          </div>
+          <div class="map-slot free" id="map-S3">
+            <div class="map-slot-dot"></div>
+            <div class="map-slot-name">S3</div>
+            <div class="map-slot-label">Free</div>
+            <div class="map-slot-res" id="mres-S3"></div>
+          </div>
+        </div>
+        <div class="road-strip">
+          <div class="road-dash"></div>
+          <div class="road-label">← Entrance / Exit →</div>
+          <div class="road-dash"></div>
+        </div>
+        <div class="map-row">
+          <div class="map-slot free" id="map-S4">
+            <div class="map-slot-dot"></div>
+            <div class="map-slot-name">S4</div>
+            <div class="map-slot-label">Free</div>
+            <div class="map-slot-res" id="mres-S4"></div>
+          </div>
+          <div class="map-slot free" id="map-S5">
+            <div class="map-slot-dot"></div>
+            <div class="map-slot-name">S5</div>
+            <div class="map-slot-label">Free</div>
+            <div class="map-slot-res" id="mres-S5"></div>
+          </div>
+          <div class="map-slot free" id="map-S6">
+            <div class="map-slot-dot"></div>
+            <div class="map-slot-name">S6</div>
+            <div class="map-slot-label">Free</div>
+            <div class="map-slot-res" id="mres-S6"></div>
+          </div>
         </div>
       </div>
-
     </div>
 
-    <!-- RIGHT: LOG -->
-    <div class="panel-card">
-      <div class="panel-title">Activity Log</div>
-      <div class="panel-sub">Vehicle & reservation events</div>
-      <div class="log-tabs">
-        <button class="log-tab active" onclick="switchTab('all')">All</button>
-        <button class="log-tab" onclick="switchTab('vehicle')">Vehicle</button>
-        <button class="log-tab" onclick="switchTab('reservation')">Reservations</button>
+    <!-- ACTIVE RESERVATIONS -->
+    <div class="res-panel">
+      <div class="panel-header" style="margin-bottom:0">
+        <div>
+          <div class="panel-title">⏳ Active Reservations</div>
+          <div class="panel-sub">Admin can cancel any reservation</div>
+        </div>
       </div>
-      <div class="log-list" id="logList">
-        <div class="log-empty">Waiting for activity...</div>
+      <div class="res-list" id="resList">
+        <div class="res-empty">No active reservations</div>
       </div>
     </div>
 
   </div>
-</div>
 
-<!-- MODAL -->
-<div class="modal-overlay" id="resModal">
-  <div class="modal">
-    <div class="modal-icon" id="modalIcon">🔶</div>
-    <div class="modal-title" id="modalTitle">Reservation Details</div>
-    <div class="modal-sub" id="modalSub"></div>
-    <div class="modal-info" id="modalInfo"></div>
-    <div class="modal-btns" id="modalBtns"></div>
+  <!-- RIGHT: LOG -->
+  <div class="log-panel">
+    <div class="panel-header" style="margin-bottom:0">
+      <div>
+        <div class="panel-title">Activity Log</div>
+        <div class="panel-sub">Vehicle & reservation events</div>
+      </div>
+    </div>
+    <div class="log-tabs">
+      <button class="log-tab active" onclick="switchTab('all')">All</button>
+      <button class="log-tab" onclick="switchTab('vehicle')">Vehicle</button>
+      <button class="log-tab" onclick="switchTab('reservation')">Reservations</button>
+    </div>
+    <div class="log-list" id="logList">
+      <div class="log-empty">Waiting for activity...</div>
+    </div>
   </div>
-</div>
 
-<div id="adminToast"></div>
+</div>
 
 <script>
-  const BACKEND = 'https://arkasense.onrender.com'
-  let adminToken = localStorage.getItem('parkasense_admin_token') || null
-  let allLog = [], currentTab = 'all'
-  let currentReservations = {}
-  const acceptedSlots = new Set()
-  let socket = null
-  let modalAction = null, modalSlot = null
-
+  // Clock
   setInterval(() => {
     document.getElementById('clock').textContent =
       new Date().toLocaleTimeString('en-PH', { hour12: false })
   }, 1000)
 
-  window.addEventListener('DOMContentLoaded', async () => {
-    if (adminToken) {
-      const ok = await verifyToken()
-      if (ok) showDashboard()
-      else { adminToken = null; localStorage.removeItem('parkasense_admin_token') }
-    }
+  const BACKEND = 'https://arkasense.onrender.com'
+  const socket  = io(BACKEND)
+
+  let allLog = []
+  let resLog = []
+  let currentTab = 'all'
+
+  socket.on('connect', () => {
+    document.getElementById('connDot').className = 'conn-dot'
+    document.getElementById('connText').textContent = 'Connected'
   })
 
-  async function verifyToken() {
-    try {
-      const res = await fetch(`${BACKEND}/admin/verify`, { headers: { 'x-admin-token': adminToken } })
-      return (await res.json()).ok
-    } catch { return false }
-  }
+  socket.on('disconnect', () => {
+    document.getElementById('connDot').className = 'conn-dot off'
+    document.getElementById('connText').textContent = 'Disconnected'
+  })
 
-  document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin() })
+  socket.on('slot-update', ({ slots, reservations, available, total, log, reservationLog }) => {
+    const resCount  = Object.keys(reservations || {}).length
+    const occupied  = Object.values(slots).filter(s => s === 'occupied').length
 
-  async function doLogin() {
-    const username = document.getElementById('loginUser').value.trim()
-    const password = document.getElementById('loginPass').value
-    const btn = document.getElementById('btnLogin')
-    const errEl = document.getElementById('loginError')
-    if (!username || !password) { errEl.textContent = '⚠ Please enter username and password'; errEl.classList.add('show'); return }
-    btn.disabled = true; btn.textContent = 'Signing in...'; errEl.classList.remove('show')
-    try {
-      const res = await fetch(`${BACKEND}/admin/login`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      })
-      const data = await res.json()
-      if (data.ok) {
-        adminToken = data.token
-        localStorage.setItem('parkasense_admin_token', adminToken)
-        document.getElementById('adminName').textContent = username
-        showDashboard()
+    // Stats
+    document.getElementById('statAvail').textContent    = available
+    document.getElementById('statOccupied').textContent = occupied
+    document.getElementById('statReserved').textContent = resCount
+    document.getElementById('statTotal').textContent    = total
+
+    // Map
+    Object.entries(slots).forEach(([name, status]) => {
+      const el    = document.getElementById(`map-${name}`)
+      const label = el.querySelector('.map-slot-label')
+      const resEl = document.getElementById(`mres-${name}`)
+      const isRes = !!(reservations && reservations[name])
+      const isOcc = status === 'occupied'
+      const wasClass = el.className
+
+      if (isOcc) {
+        el.className = 'map-slot occupied'
+        label.textContent = 'Occupied'
+        resEl.textContent = ''
+      } else if (isRes) {
+        el.className = 'map-slot reserved'
+        label.textContent = 'Reserved'
+        resEl.textContent = '👤 ' + (reservations[name].name || '').split(' ')[0]
       } else {
-        errEl.textContent = '⚠ ' + (data.error || 'Login failed'); errEl.classList.add('show')
+        el.className = 'map-slot free'
+        label.textContent = 'Free'
+        resEl.textContent = ''
       }
-    } catch { errEl.textContent = '⚠ Cannot connect to server'; errEl.classList.add('show') }
-    btn.disabled = false; btn.textContent = '🔑 Sign In'
-  }
 
-  function showDashboard() {
-    document.getElementById('loginScreen').classList.add('hidden')
-    connectSocket()
-  }
-
-  async function doLogout() {
-    if (!confirm('Sign out?')) return
-    try { await fetch(`${BACKEND}/admin/logout`, { method: 'POST', headers: { 'x-admin-token': adminToken } }) } catch {}
-    adminToken = null; localStorage.removeItem('parkasense_admin_token')
-    if (socket) socket.disconnect()
-    document.getElementById('loginScreen').classList.remove('hidden')
-    document.getElementById('loginUser').value = ''
-    document.getElementById('loginPass').value = ''
-    document.getElementById('loginError').classList.remove('show')
-  }
-
-  function connectSocket() {
-    socket = io(BACKEND)
-    socket.on('connect', () => { document.getElementById('connDot').className = 'conn-dot'; document.getElementById('connText').textContent = 'Connected' })
-    socket.on('disconnect', () => { document.getElementById('connDot').className = 'conn-dot off'; document.getElementById('connText').textContent = 'Disconnected' })
-
-    socket.on('slot-update', ({ slots, reservations, available, total, log, reservationLog }) => {
-      const resCount = Object.keys(reservations || {}).length
-      const occupied = Object.values(slots).filter(s => s === 'occupied').length
-
-      // Avail bar
-      const bar = document.getElementById('availBar')
-      document.getElementById('availText').textContent = available === 0
-        ? 'Parking Full' : `${available} slot${available !== 1 ? 's' : ''} available`
-      bar.className = 'avail-bar' + (available === 0 ? ' full' : available <= 2 ? ' low' : '')
-
-      document.getElementById('statAvail').textContent    = available
-      document.getElementById('statOccupied').textContent = occupied
-      document.getElementById('statReserved').textContent = resCount
-      document.getElementById('statTotal').textContent    = total
-      document.getElementById('statEvents').textContent   = (log||[]).length + (reservationLog||[]).length
-
-      // Map
-      Object.entries(slots).forEach(([name, status]) => {
-        const el    = document.getElementById(`map-${name}`)
-        const label = el.querySelector('.map-slot-label')
-        const resEl = document.getElementById(`mres-${name}`)
-        const isRes = !!(reservations && reservations[name])
-        const wasClass = el.className
-
-        if (status === 'occupied') { el.className='map-slot occupied'; label.textContent='Occupied'; resEl.textContent='' }
-        else if (isRes)            { el.className='map-slot reserved'; label.textContent='Reserved'; resEl.textContent='👤 '+(reservations[name].name||'').split(' ')[0] }
-        else                       { el.className='map-slot free';     label.textContent='Free';     resEl.textContent='' }
-
-        if (wasClass !== el.className) { el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 200) }
-      })
-
-      currentReservations = reservations || {}
-      renderReservations(currentReservations)
-
-      allLog = [
-        ...(reservationLog||[]).map(e => ({...e, type:'reservation'})),
-        ...(log||[]).map(e => ({...e, type:'vehicle'}))
-      ].sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp))
-
-      renderLog()
+      if (wasClass !== el.className) {
+        el.classList.add('flash')
+        setTimeout(() => el.classList.remove('flash'), 200)
+      }
     })
-  }
+
+    // Active reservations list
+    renderReservations(reservations || {})
+
+    // Logs
+    allLog = [
+      ...(reservationLog || []).map(e => ({ ...e, type: 'reservation' })),
+      ...(log || []).map(e => ({ ...e, type: 'vehicle' }))
+    ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+
+    resLog = (reservationLog || []).map(e => ({ ...e, type: 'reservation' }))
+
+    document.getElementById('statEvents').textContent = (log || []).length + (reservationLog || []).length
+
+    renderLog()
+  })
 
   function renderReservations(res) {
     const el = document.getElementById('resList')
     const entries = Object.entries(res)
-    if (!entries.length) { el.innerHTML = '<div class="res-empty">No active reservations</div>'; return }
-    el.innerHTML = entries.map(([slot, r]) => {
-      const accepted = acceptedSlots.has(slot)
-      return `<div class="res-item">
-        <div class="res-item-top">
+    if (entries.length === 0) {
+      el.innerHTML = '<div class="res-empty">No active reservations</div>'
+      return
+    }
+    el.innerHTML = entries.map(([slot, r]) => `
+      <div class="res-item">
+        <div class="res-item-info">
           <div class="res-item-slot">Slot ${slot}</div>
-          <span class="res-status-badge ${accepted?'accepted':'pending'}">${accepted?'✓ Accepted':'⏳ Pending'}</span>
+          <div class="res-item-name">${r.name}</div>
+          <div class="res-item-plate">🚗 ${r.plate} ${r.phone ? '· 📞 '+r.phone : ''}</div>
         </div>
-        <div class="res-item-name">${r.name}</div>
-        <div class="res-item-plate">🚗 ${r.plate}${r.phone?' · 📞 '+r.phone:''}</div>
-        <div class="res-item-expire">Expires: ${formatExpiry(r.expiresAtDisplay)}</div>
-        <div class="res-actions">
-          <button class="btn-accept" onclick="openModal('accept','${slot}')" ${accepted?'disabled':''}>✓ Accept</button>
-          <button class="btn-reject" onclick="openModal('reject','${slot}')">✕ Reject</button>
-          <button class="btn-force-cancel" onclick="openModal('cancel','${slot}')">Cancel</button>
+        <div>
+          <div class="res-item-expire">Expires<br>${r.expiresAtDisplay}</div>
+          <button class="btn-cancel-res" onclick="adminCancel('${slot}')">Cancel</button>
         </div>
-      </div>`
-    }).join('')
-  }
-
-  function formatExpiry(dateStr) {
-    try {
-      const d = new Date(dateStr)
-      if (isNaN(d)) return dateStr
-      return d.toLocaleString(undefined, { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit', hour12:true })
-    } catch { return dateStr }
+      </div>
+    `).join('')
   }
 
   function switchTab(tab) {
     currentTab = tab
-    document.querySelectorAll('.log-tab').forEach((b,i) => b.classList.toggle('active', ['all','vehicle','reservation'][i] === tab))
+    document.querySelectorAll('.log-tab').forEach((b, i) => {
+      b.classList.toggle('active', ['all','vehicle','reservation'][i] === tab)
+    })
     renderLog()
   }
 
   function renderLog() {
     const el = document.getElementById('logList')
-    const data = currentTab === 'all' ? allLog
+    let data = currentTab === 'all' ? allLog
       : currentTab === 'vehicle' ? allLog.filter(e => e.type === 'vehicle')
       : allLog.filter(e => e.type === 'reservation')
-    if (!data.length) { el.innerHTML = '<div class="log-empty">No activity yet</div>'; return }
-    el.innerHTML = data.slice(0,40).map(e => {
+
+    if (data.length === 0) {
+      el.innerHTML = '<div class="log-empty">No activity yet</div>'
+      return
+    }
+
+    el.innerHTML = data.slice(0, 40).map(e => {
       if (e.type === 'vehicle') {
         const isEnter = e.status === 'occupied'
-        return `<div class="log-item ${isEnter?'enter':'exit'}"><div class="log-time">${e.timestamp}</div><div class="log-msg">${isEnter?'🚗 Vehicle Entered':'✅ Vehicle Left'}</div><div class="log-slot">Slot ${e.slot} → ${e.status}</div></div>`
+        return `
+          <div class="log-item ${isEnter ? 'enter' : 'exit'}">
+            <div class="log-time">${e.timestamp}</div>
+            <div class="log-msg">${isEnter ? '🚗 Vehicle Entered' : '✅ Vehicle Left'}</div>
+            <div class="log-slot">Slot ${e.slot} → ${e.status}</div>
+          </div>`
+      } else {
+        const icons = { reserved:'🔶', cancelled:'❌', expired:'⏱', fulfilled:'✅', 'admin-cancelled':'🛑' }
+        const cls = e.action === 'reserved' ? 'resin' : 'resout'
+        return `
+          <div class="log-item ${cls}">
+            <div class="log-time">${e.timestamp}</div>
+            <div class="log-msg">${icons[e.action] || '📋'} ${e.action.charAt(0).toUpperCase()+e.action.slice(1)}: ${e.name || ''}</div>
+            <div class="log-slot">Slot ${e.slot}${e.plate ? ' · ' + e.plate : ''}</div>
+          </div>`
       }
-      const icons = {reserved:'🔶',cancelled:'❌',expired:'⏱',fulfilled:'✅','admin-cancelled':'🛑'}
-      const cls = e.action==='reserved'?'resin':'resout'
-      return `<div class="log-item ${cls}"><div class="log-time">${e.timestamp}</div><div class="log-msg">${icons[e.action]||'📋'} ${e.action.charAt(0).toUpperCase()+e.action.slice(1)}: ${e.name||''}</div><div class="log-slot">Slot ${e.slot}${e.plate?' · '+e.plate:''}</div></div>`
     }).join('')
   }
 
-  function openModal(action, slot) {
-    modalAction = action; modalSlot = slot
-    const r = currentReservations[slot]; if (!r) return
-    const icons  = {accept:'✅', reject:'❌', cancel:'🛑'}
-    const titles = {accept:'Accept Reservation', reject:'Reject Reservation', cancel:'Cancel Reservation'}
-    const subs   = {
-      accept:`Approve this reservation for Slot ${slot}.`,
-      reject:`Reject and remove this reservation for Slot ${slot}.`,
-      cancel:`Force-cancel this reservation for Slot ${slot}.`
-    }
-    document.getElementById('modalIcon').textContent  = icons[action]
-    document.getElementById('modalTitle').textContent = titles[action]
-    document.getElementById('modalSub').textContent   = subs[action]
-    document.getElementById('modalInfo').innerHTML = `
-      <div class="modal-row"><span class="modal-row-key">Slot</span><span class="modal-row-val">Slot ${slot}</span></div>
-      <div class="modal-row"><span class="modal-row-key">Name</span><span class="modal-row-val">${r.name}</span></div>
-      <div class="modal-row"><span class="modal-row-key">Plate</span><span class="modal-row-val">${r.plate}</span></div>
-      ${r.phone?`<div class="modal-row"><span class="modal-row-key">Phone</span><span class="modal-row-val">${r.phone}</span></div>`:''}
-      <div class="modal-row"><span class="modal-row-key">Duration</span><span class="modal-row-val">${r.duration} min</span></div>
-      <div class="modal-row"><span class="modal-row-key">Expires</span><span class="modal-row-val">${formatExpiry(r.expiresAtDisplay)}</span></div>`
-    const confirmClass = action==='accept'?'do-accept':'do-reject'
-    const confirmLabel = action==='accept'?'✓ Accept':action==='reject'?'✕ Reject':'🛑 Cancel'
-    document.getElementById('modalBtns').innerHTML = `
-      <button class="modal-btn go-back" onclick="closeModal()">Go Back</button>
-      <button class="modal-btn ${confirmClass}" onclick="confirmAction()">${confirmLabel}</button>`
-    document.getElementById('resModal').classList.add('show')
-  }
-
-  function closeModal() { document.getElementById('resModal').classList.remove('show'); modalAction=null; modalSlot=null; }
-  document.getElementById('resModal').addEventListener('click', e => { if (e.target===e.currentTarget) closeModal() })
-
-  async function confirmAction() {
-    if (!modalAction || !modalSlot) return
-    const slot = modalSlot, action = modalAction
-    closeModal()
-    if (action === 'accept') {
-      acceptedSlots.add(slot)
-      renderReservations(currentReservations)
-      showToast(`✓ Reservation for Slot ${slot} accepted`, 'green')
-      return
-    }
+  async function adminCancel(slot) {
+    if (!confirm(`Cancel reservation for Slot ${slot}?`)) return
     try {
-      const res = await fetch(`${BACKEND}/admin/reserve/${slot}`, { method:'DELETE', headers:{'x-admin-token':adminToken} })
+      const res = await fetch(`${BACKEND}/admin/reserve/${slot}`, { method: 'DELETE' })
       const data = await res.json()
-      if (data.ok) { acceptedSlots.delete(slot); showToast(`Slot ${slot} reservation ${action}ed`, 'red') }
-      else if (res.status===401) { showToast('Session expired. Please log in again.', 'red'); doLogout() }
-      else showToast(data.error||'Error', 'red')
-    } catch { showToast('Cannot connect to server', 'red') }
-  }
-
-  function showToast(msg, color='green') {
-    const t = document.getElementById('adminToast')
-    t.textContent = msg
-    t.style.background = color==='green' ? '#16A34A' : '#DC2626'
-    t.style.opacity = '1'
-    t.style.transform = 'translateX(-50%) translateY(0)'
-    setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(20px)' }, 3000)
+      if (!data.ok) alert(data.error)
+    } catch (e) {
+      alert('Cannot connect to server')
+    }
   }
 </script>
 </body>
